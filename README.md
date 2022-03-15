@@ -36,7 +36,7 @@ $ install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 ```
 
 ### Install awx-operator
-- 쿠버네티스 환경에서 AWX를 배포하기 위한 도구입니다.
+- 쿠버네티스 클러스터 환경에서 AWX를 쉽게 배포하기 위한 도구입니다.
 ```
 $ git clone https://github.com/ansible/awx-operator.git 
 $ cd awx-operator
@@ -51,12 +51,12 @@ $ firewall-cmd --reload
 ```
 
 ### Start minikube
-- AWX를 사용하기 위한 도커 기반의 K8S 클러스터를 생성합니다.
+- AWX를 사용하기 위한 도커 기반의 쿠버네티스 클러스터를 생성합니다.
 ```
 $ minikube start --cpus=4 --memory=8g --addons=ingress --install-addons=true --driver=docker --force
 ```
 
-쿠버네티스 환경이 정상적으로 생성되었는 지 확인합니다.
+쿠버네티스 클러스터가 정상적으로 생성되었는 지 확인합니다.
 ```
 $ minikube kubectl -- get nodes
 $ minikube kubectl -- get pods -A
@@ -68,12 +68,12 @@ $ alias kubectl="minikube kubectl --"
 $ export NAMESPACE=awx
 ```
 
-AWX Operator를 클러스터에 배포합니다.
+AWX Operator를 쿠버네티스 클러스터에 배포합니다.
 ```
 $ make deploy
 ```
 
-pod가 정상적으로 배포 되었는지 확인합니다. awx-operator-controller의 상태가 'Running'이 된 후 다음 단계를 진행합니다.
+AWX Operator pod가 정상적으로 배포 되었는지 확인합니다. awx-operator-controller의 상태가 'Running'이 된 후 다음 단계를 진행합니다.
 ```
 $ kubectl get pods -n awx
 
@@ -86,8 +86,7 @@ awx-operator-controller-manager-66ccd8f997-rhd4z   2/2     Running   0          
 $ kubectl config set-context --current --namespace=awx
 ```
 
-AWX Deployment Service를 생성하기 위한 yml파일을 변경합니다.  
-
+AWX Deployment와 Service를 생성하기 위한 yml파일을 변경합니다.  
 
 `$ vi awx-demo.yml` 
 ```yaml
@@ -100,7 +99,7 @@ spec:
   service_type: nodeport
   ingress_type: none
 ```
-- Deployment 내용을 변경하려면 `main.yml`를 참조합니다.
+- AWX Deployment와 Service 내용을 변경하려면 `main.yml`를 참조합니다.
   -  https://github.com/ansible/awx-operator/blob/devel/roles/installer/defaults/main.yml
 <br>
 <br>
@@ -115,8 +114,8 @@ $ kubectl apply -n awx -f awx-demo.yml
 $ kubectl get pods -n awx -l "app.kubernetes.io/managed-by=awx-operator"
 
 NAME                        READY   STATUS    RESTARTS   AGE
-awx-demo-77d96f88d5-pnhr8   4/4     Running   0          3m24s
-awx-demo-postgres-0         1/1     Running   0          3m34s
+awx-77d96f88d5-pnhr8   4/4     Running   0          3m24s
+awx-postgres-0         1/1     Running   0          3m34s
 ```
 
 생성된 service를 확인합니다.
@@ -124,13 +123,13 @@ awx-demo-postgres-0         1/1     Running   0          3m34s
 $ kubectl get svc -n awx -l "app.kubernetes.io/managed-by=awx-operator"
 
 NAME                TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE
-awx-demo-postgres   ClusterIP   None           <none>        5432/TCP       4m4s
-awx-demo-service    NodePort    10.109.40.38   <none>        80:31006/TCP   3m56s
+awx-postgres   ClusterIP   None           <none>        5432/TCP       4m4s
+awx-service    NodePort    10.109.40.38   <none>        80:31006/TCP   3m56s
 ```
 
 외부에서 AWX 대시보드 접근을 위한 포트포워딩을 백그라운드에서 실행합니다.
 ```
-$ kubectl port-forward svc/awx-demo-service -n awx --address 0.0.0.0 80:80 &> /dev/null &
+$ kubectl port-forward svc/awx-service -n awx --address 0.0.0.0 80:80 &> /dev/null &
 ```
 
 admin password 추출
