@@ -141,6 +141,9 @@ $ kubectl get -n awx secret awx-demo-admin-password -o jsonpath="{.data.password
 AWX 대시보드에 접속합니다.
 - http://<<public_ip>>:80
 - ID/PW : admin/PASSWORD
+  
+![image](https://user-images.githubusercontent.com/34114265/158306866-95408b73-cfac-4682-9b7c-dafd83b4ddbd.png)
+
 
 #
 ### 쿠버네티스 클러스터 관리 대시보드 설치
@@ -152,6 +155,7 @@ $ kubectl proxy --address='0.0.0.0' --disable-filter=true  &> /dev/null &
 - public ip를 변경한 후 접속합니다.
   - http://<<public_ip>>:8001/api/v1/namespaces/kubernetes-dashboard/services/http:kubernetes-dashboard:/proxy/ 
 
+![image](https://user-images.githubusercontent.com/34114265/158307186-c816ab72-6484-44ac-91f2-d6bd815a2177.png)
 
 
 
