@@ -135,7 +135,7 @@ $ kubectl port-forward svc/awx-service -n awx --address 0.0.0.0 80:80 &> /dev/nu
 admin password 추출
  - 기본적으로 admin 사용자는 admin이고 암호는 <resourcename>-admin-password시크릿에서 사용할 수 있습니다. 관리자 암호를 검색하려면 다음을 실행합니다.
 ```
-$ kubectl get -n awx secret awx-demo-admin-password -o jsonpath="{.data.password}" | base64 --decode 
+$ kubectl get -n awx secret awx-admin-password -o jsonpath="{.data.password}" | base64 --decode 
 ```
 
 AWX 대시보드에 접속합니다.
