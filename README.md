@@ -11,7 +11,7 @@ Docker 기반의 MiniKube를 사용하고 Single Node 아키텍처를 적용합�
 ### Install packages
 ```
 $ dnf -y update
-$ dnf -y install conntrack make wget git
+$ dnf -y install conntrack make wget git cloud-init
 ```
 
 ### Install Docker
@@ -48,6 +48,13 @@ $ git checkout 0.17.0
 $ firewall-cmd --permanent --zone=public --add-service=http
 $ firewall-cmd --permanent --zone=public --add-port=8001/tcp
 $ firewall-cmd --reload
+```
+
+### Config sshd
+```
+$ vi /etc/ssh/sshd_config
+$ PasswordAuthentication 값을 yes 로 변경
+$ systemctl restart sshd
 ```
 
 ### Start minikube
