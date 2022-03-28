@@ -53,9 +53,16 @@ $ firewall-cmd --reload
 ### Config sshd
 ```
 $ vi /etc/ssh/sshd_config
-$ PasswordAuthentication 값을 yes로 변경
-$ PermitRootLogin 값을 yes로 변경
+  PasswordAuthentication: yes
+  PermitRootLogin: yes
 $ systemctl restart sshd
+```
+
+### Config cloud-init
+```
+$ vi /etc/cloud/cloud.cfg
+  disable_root: false
+  ssh_pwauth: true
 ```
 
 ### Start minikube
