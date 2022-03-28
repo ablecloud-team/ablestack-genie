@@ -53,8 +53,8 @@ $ firewall-cmd --reload
 ### Config sshd
 ```
 $ vi /etc/ssh/sshd_config
-  PasswordAuthentication: yes
-  PermitRootLogin: yes
+  PasswordAuthentication yes
+  PermitRootLogin yes
 $ systemctl restart sshd
 ```
 
