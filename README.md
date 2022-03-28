@@ -53,7 +53,8 @@ $ firewall-cmd --reload
 ### Config sshd
 ```
 $ vi /etc/ssh/sshd_config
-$ PasswordAuthentication 값을 yes 로 변경
+$ PasswordAuthentication 값을 yes로 변경
+$ PermitRootLogin 값을 yes로 변경
 $ systemctl restart sshd
 ```
 
