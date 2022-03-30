@@ -129,8 +129,8 @@ $ kubectl apply -n awx -f awx-demo.yml
 $ kubectl get pods -n awx -l "app.kubernetes.io/managed-by=awx-operator"
 
 NAME                        READY   STATUS    RESTARTS   AGE
-awx-77d96f88d5-pnhr8          4/4     Running   0          3m24s
-awx-postgres-0                1/1     Running   0          3m34s
+awx-77d96f88d5-pnhr8        4/4     Running   0          3m24s
+awx-postgres-0              1/1     Running   0          3m34s
 ```
 
 생성된 service를 확인합니다.
