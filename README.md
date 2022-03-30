@@ -129,8 +129,8 @@ $ kubectl apply -n awx -f awx-demo.yml
 $ kubectl get pods -n awx -l "app.kubernetes.io/managed-by=awx-operator"
 
 NAME                        READY   STATUS    RESTARTS   AGE
-awx-77d96f88d5-pnhr8   4/4     Running   0          3m24s
-awx-postgres-0         1/1     Running   0          3m34s
+awx-77d96f88d5-pnhr8          4/4     Running   0          3m24s
+awx-postgres-0                1/1     Running   0          3m34s
 ```
 
 생성된 service를 확인합니다.
@@ -138,8 +138,8 @@ awx-postgres-0         1/1     Running   0          3m34s
 $ kubectl get svc -n awx -l "app.kubernetes.io/managed-by=awx-operator"
 
 NAME                TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE
-awx-postgres   ClusterIP   None           <none>        5432/TCP       4m4s
-awx-service    NodePort    10.109.40.38   <none>        80:31006/TCP   3m56s
+awx-postgres        ClusterIP   None           <none>        5432/TCP       4m4s
+awx-service         NodePort    10.109.40.38   <none>        80:31006/TCP   3m56s
 ```
 
 외부에서 AWX 대시보드 접근을 위한 포트포워딩을 백그라운드에서 실행합니다.
