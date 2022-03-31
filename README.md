@@ -113,6 +113,7 @@ metadata:
 spec:
   service_type: nodeport
   ingress_type: none
+  projects_persistence: true
 ```
 - AWX Deployment와 Service 내용을 변경하려면 `main.yml`를 참조합니다.
   -  https://github.com/ansible/awx-operator/blob/devel/roles/installer/defaults/main.yml
