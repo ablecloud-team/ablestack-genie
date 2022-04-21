@@ -25,7 +25,7 @@ check_port_forward.sh                       # k8s 포트포워딩 상태 체크 
 automation_controller_initialization.yml    # Automation Controller이 사용자에 의해 배포될 때 실행되는 플래이북 
 ```
 
-### "automation_controller_installation.sh" 실행
+### Automation Controller 템플릿 구성 쉘 스크립트 실행
 
 ```
 $ sh ./install_automation_controller_vm.sh
