@@ -5,8 +5,8 @@ ABLESTACK 클라우드 인프라 및 애플리케이션 배포 자동화 플랫�
 Docker 기반의 MiniKube를 사용하고 Single Node 아키텍처를 적용합니다.
 - OS: CentOS 8.5 2111
 - 요구 사양:
-  - Automation Controller VM: 8Core 16G
-  - Minikube Cluster: 4Core 8G
+  - Automation Controller VM: 8Core 8G
+  - Minikube Cluster: 4Core 6G
 
 
 ## Automation Controller 템플릿 구성 방법

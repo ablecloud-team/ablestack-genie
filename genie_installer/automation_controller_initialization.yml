@@ -1,0 +1,112 @@
+---
+- name: Automation Controller 초기화
+  hosts: localhost
+  vars:
+    base_path: 'genie'
+    minikube_cpu: '4'
+    minikube_ram: '6g'
+    genie_ip: 'localhost' # Genie 대시보드 IP입니다.
+  vars_files: 
+    - /genie/ansible_vars_files.json
+  gather_facts: no
+  tasks:
+    - name: kube config Home 디렉토리 설정
+      shell: ln -s /root/.minikube /root/.kube/.minikube
+
+    - name: Minikube 클러스터 시작
+      shell: minikube start --cpus={{ minikube_cpu }} --memory={{ minikube_ram }} --addons=ingress --install-addons=true --driver=docker --force
+
+    - name: Minikube 상태 체크
+      shell: minikube status |awk -F ' ' '/{{item.shell}}/{ print $2 }'
+      register: minikube_host_stauts
+      failed_when: "'Running' not in minikube_host_stauts.stdout_lines"
+      with_items:
+        - { shell: 'host'}
+        - { shell: 'kubelet'}
+        - { shell: 'apiserver'}
+
+    - name: 기본 Namespace를 awx로 변경
+      shell: kubectl config set-context --current --namespace=awx
+
+    - name: SSH 키 생성
+      community.crypto.openssh_keypair:
+        path: /root/.ssh/id_rsa
+        force: yes
+
+    - name: 생성된 공개키 Mold SSH 키페어 등록
+      cs_sshkeypair:
+        name: "{{ AC_INSTANT_NAME }}"
+        public_key: "{{ lookup('file', '/root/.ssh/id_rsa.pub') }}"
+        api_url: "{{ MOLD_API_URL }}"
+        api_key: "{{ MOLD_API_KEY }}"
+        api_secret: "{{ MOLD_SECRET_KEY }}"
+
+    - name: Automation Controller public ip 생성
+      cs_ip_address:
+        network: "{{ AC_NETWORK_NAME }}"
+        api_url: "{{ MOLD_API_URL }}"
+        api_key: "{{ MOLD_API_KEY }}"
+        api_secret: "{{ MOLD_SECRET_KEY }}"
+        zone: Zone
+      register: ac_public_ip
+
+    - name: Automation Controller static NAT 설정
+      cs_staticnat:
+        ip_address: "{{ ac_public_ip.ip_address }}"
+        vm: "{{ AC_INSTANT_NAME }}"
+        api_url: "{{ MOLD_API_URL }}"
+        api_key: "{{ MOLD_API_KEY }}"
+        api_secret: "{{ MOLD_SECRET_KEY }}"
+        zone: Zone
+
+    - name: Automation Controller 방화벽 설정
+      cs_firewall:
+        ip_address: "{{ ac_public_ip.ip_address }}"
+        cidr: 0.0.0.0/0
+        port: "{{ item }}"
+        protocol: tcp
+        api_url: "{{ MOLD_API_URL }}"
+        api_key: "{{ MOLD_API_KEY }}"
+        api_secret: "{{ MOLD_SECRET_KEY }}"
+        zone: Zone
+      with_items:
+      - 22
+      - 5432
+      - 8001
+      - 80
+
+    - name: Genie Dashboard 응답 대기 중
+      shell: curl -o /dev/null -s -w "%{http_code}\n" http://{{ genie_ip }}:80
+      register: genie_return_code
+      until: genie_return_code.stdout == "200"
+      retries: 50
+
+    - name: AWX 초기 관리자 패스워드 추출
+      shell: kubectl get -n awx secret awx-admin-password -o jsonpath="{.data.password}" | base64 --decode
+      register: admin_password
+
+    - name: Automation Controller Credential 생성
+      awx.awx.credential:
+        name: Automation Controller Credential
+        organization: Default
+        credential_type: Machine
+        state: present
+        inputs:
+          username: root
+          ssh_key_data: "{{ lookup('file', '/root/.ssh/id_rsa') }}"
+        controller_host: "http://{{ genie_ip }}:80"
+        controller_username: admin
+        controller_password: "{{ admin_password.stdout }}"
+
+    - name: Job settings - 전역변수 설정
+      awx.awx.settings:
+        settings:
+          AWX_TASK_ENV:
+            MOLD_API_URL: "{{ MOLD_API_URL }}"
+            MOLD_API_KEY: "{{ MOLD_API_KEY }}"
+            MOLD_SECRET_KEY: "{{ MOLD_SECRET_KEY }}"
+            MOLD_SSH_KEYPAIR: "{{ AC_INSTANT_NAME }}"
+        controller_host: "http://{{ genie_ip }}:80"
+        controller_username: admin
+        controller_password: "{{ admin_password.stdout }}"
+        
