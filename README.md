@@ -1,17 +1,26 @@
-# ABLESTACK-Genie
+# ABLESTACK Genie
 ABLESTACK 클라우드 인프라 및 애플리케이션 배포 자동화 플랫폼
 
-## Genie VM 설치 및 구성
+## Automation Controller 템플릿 구성 방법
+
+### Automation Controller 구성 정보
 Docker 기반의 MiniKube를 사용하고 Single Node 아키텍처를 적용합니다.
 - OS: CentOS 8.5 2111
 - 요구 사항:
   - Genie VM: 8Core 16G
   - Minikube Cluster: 4Core 8G
 
-### Install packages
+### automation_controller_installation.sh 실행
+임의의 경로 또는 "$ /genie/" 에 설치에 필요한 파일들을 위치합니다.
 ```
-$ dnf -y update
-$ dnf -y install conntrack make wget git cloud-init
+$ ls -al
+
+install_automation_controller_vm.sh         # Automation Controller 템플릿을 구성하기 위한 환경 설정
+automation_controller_installation.yml      # Automation Controller 템플릿을 구성 플레이북
+check_port_forward.service                  # k8s 포트포워딩 상태 체크 서비스
+check_port_forward.sh                       # k8s 포트포워딩 상태 체크 서비스의 쉘 프로그램
+automation_controller_initialization.yml    # 템플릿이 사용자에 의해 구성될 때 
+
 ```
 
 ### Install Docker
