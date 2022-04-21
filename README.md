@@ -13,7 +13,7 @@ Docker 기반의 MiniKube를 사용하고 Single Node 아키텍처를 적용합�
 
 
 ### Automation Controller 템플릿 구성 준비
-임의의 경로 또는 "$ /genie/" 에 아래의 목록과 같이 설치에 필요한 파일들을 위치합니다.
+"경로 $ /genie/" 에 아래의 목록과 같이 설치에 필요한 파일들을 위치합니다.
 
 ```
 $ ls -al
