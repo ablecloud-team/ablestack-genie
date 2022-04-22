@@ -1,0 +1,125 @@
+---
+- name: AWX-EE 템플릿 배포
+  hosts: localhost
+  vars:
+    base_path: root
+    container_home_path: /home/runner/  # 컨테이너 내부 $HOME 디렉토리
+
+    docker_ce_verion: '3:20.10.14-3.el8'
+    docker_cli_verion: '1:20.10.14-3.el8'
+    docker_containerd_io_verion: '1.5.11-3.1.el8'
+    collection_mysql_version: '3.1.2'
+    pip3_pymysql_version: '1.0.2'
+    collection_cloudstack_version: '2.2.3'
+    pip3_cloudstack_version: '3.0.0'
+
+    docker_hub_user_id: 'stardom3645'
+    docker_hub_user_password: 'Ablecloud1!'
+    awx_ee_officail_version: 'latest'
+    container_name: 'awx-ee'
+    docker_commit_msg : 'ABLESTACK Automation Service EE' 
+    docker_commit_repo : 'stardom3645/awx-ee' 
+    docker_commit_tag : 'latest' 
+
+    http_host: 'html'
+    http_conf: 'wordpress'
+    http_port: '80'
+  gather_facts: no
+  tasks:
+    - name: 도커 설치 1/4 # podman 삭제
+      dnf:
+        name:
+          - podman 
+          - buildah
+        state: absent
+
+    - name: 도커 설치 2/4 # 도커 저장소 추가
+      shell: dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
+
+    - name: 도커 설치 3/4 # 도커 설치
+      dnf:
+        name:
+          - docker-ce-{{ docker_ce_verion }}
+          - docker-ce-cli-{{ docker_cli_verion }}
+          - containerd.io-{{ docker_containerd_io_verion }}
+        state: present
+
+    - name: 도커 설치 4/4 # 도커 서비스 시작
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+        masked: no
+
+    - name: DockerHub 로그인
+      community.docker.docker_login:
+        username: "{{ docker_hub_user_id }}"
+        password: "{{ docker_hub_user_password }}"
+
+    - name: 컨테이너 실행
+      community.docker.docker_container:
+        name: "{{ container_name }}"
+        image: quay.io/ansible/awx-ee:{{ awx_ee_officail_version }}
+        state: started
+        command: sleep infinity
+
+    - name: 컨테이너 모듈 설치
+      community.docker.docker_container_exec:
+        container: "{{ container_name }}"
+        command: "{{ item.command }}"
+        chdir: /root
+      register: result
+      with_items:
+        - { command: 'pip3 install cs=={{ pip3_cloudstack_version }}' }      # CS 모듈
+        - { command: 'ansible-galaxy collection install ngine_io.cloudstack:=={{ collection_cloudstack_version }}' }  # CS 모듈
+        - { command: 'pip install PyMySQL=={{ pip3_pymysql_version }}' }  # MySQL 모듈 (for wordpress)
+        - { command: 'ansible-galaxy collection install community.mysql:=={{ collection_mysql_version }}' }      # MySQL 모듈 (for wordpress)
+
+    - name: ansible 설정파일 구성
+      community.docker.docker_container_exec:
+        container: "{{ container_name }}"
+        command: "{{ item.command }}"
+        chdir: /root
+      register: result
+      with_items:
+        - {command: '/bin/bash -c "touch /runner/project/ansible.cfg"'}
+        - {command: '/bin/bash -c "cat /dev/null > /runner/project/ansible.cfg"'}
+        - {command: '/bin/bash -c "echo [defaults] >> /runner/project/ansible.cfg"'}
+        - {command: '/bin/bash -c "echo # uncomment this to disable SSH key host checking >> /runner/project/ansible.cfg"'}
+        - {command: '/bin/bash -c "echo host_key_checking = False >> /runner/project/ansible.cfg"'}     
+
+    - name: httpd.conf 파일 추가
+      lineinfile:
+        path: /{{ base_path }}/httpd.conf
+        create: yes
+        line: "{{ item.line }}"
+      with_items:
+        - {line: '<VirtualHost *:{{ http_port }}>'}
+        - {line: '        ServerAdmin webmaster@localhost'}
+        - {line: '        ServerName {{ http_host }}'}
+        - {line: '        ServerAlias www.{{ http_host }}'}
+        - {line: '        DocumentRoot /var/www/{{ http_host }}/wordpress'}
+        - {line: '        ErrorLog /var/log/httpd/error.log'}
+        - {line: '        CustomLog /var/log/httpd/access.log combined'}
+        - {line: '        <Directory /var/www/{{ http_host }}/wordpress>'}
+        - {line: '                    Options Indexes FollowSymLinks'}
+        - {line: '            AllowOverride all'}
+        - {line: '            Require all granted'}
+        - {line: '        </Directory>'}
+        - {line: '</VirtualHost>'}
+    - shell:
+        cmd: docker cp /{{ base_path }}/httpd.conf {{ container_name }}:/{{ container_home_path }}/httpd.conf
+        chdir: "/{{ base_path }}"
+        
+    - name: 컨테이너 이미지 커밋
+      shell:
+        cmd: docker commit -m "{{ docker_commit_msg }}" {{ container_name }} {{ docker_commit_repo }}:{{ docker_commit_tag }}
+        chdir: "/{{ base_path }}"
+
+    - name: 컨테이너 이미지 저장소에 푸시
+      shell:
+        cmd: docker push {{ docker_commit_repo }}:{{ docker_commit_tag }}
+        chdir: "/{{ base_path }}"
+
+    - debug:
+        msg: "AWX-EE 템플릿 배포 완료"
