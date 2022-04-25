@@ -1,5 +1,5 @@
 ---
-- name: AWX-EE 템플릿 배포
+- name: AWX-EE 이미지 변경
   hosts: localhost
   vars:
     base_path: root
@@ -56,7 +56,7 @@
         username: "{{ docker_hub_user_id }}"
         password: "{{ docker_hub_user_password }}"
 
-    - name: 컨테이너 실행
+    - name: 공식 컨테이너 실행
       community.docker.docker_container:
         name: "{{ container_name }}"
         image: quay.io/ansible/awx-ee:{{ awx_ee_officail_version }}
@@ -122,4 +122,4 @@
         chdir: "/{{ base_path }}"
 
     - debug:
-        msg: "AWX-EE 템플릿 배포 완료"
+        msg: "AWX-EE 이미지 변경 완료"

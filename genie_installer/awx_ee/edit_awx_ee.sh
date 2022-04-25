@@ -11,6 +11,8 @@ PIP3_JMESPATH_VERSION="1.0.0"
 COLLECTION_DOCKER_VERSION="2.3.0"
 PIP3_DOCKER_VERSION="5.0.3"
 
+### 환경변수 설정
+HERE=$(dirname $(realpath $0))
 
 ### Setting Repositories
 sed -i 's/mirrorlist/#mirrorlist/' /etc/yum.repos.d/CentOS*
@@ -31,5 +33,5 @@ ansible-galaxy collection install community.docker:==$COLLECTION_DOCKER_VERSION
 pip3 install docker==$PIP3_DOCKER_VERSION
 
 
-### AWX-EE 템플릿 배포 Playbook 실행
-ansible-playbook /root/awx_ee_template.yml
+### AWX-EE 이미지 변경 Playbook 실행
+ansible-playbook $HERE/awx_ee_image.yml
