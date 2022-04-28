@@ -34,4 +34,4 @@ pip3 install docker==$PIP3_DOCKER_VERSION
 
 
 ### AWX-EE 이미지 변경 Playbook 실행
-ansible-playbook $HERE/awx_ee_image.yml
+ansible-playbook $HERE/customize_awx_ee.yml

@@ -1,5 +1,5 @@
 ---
-- name: Automation Controller 초기화
+- name: Automation Controller 배포
   hosts: localhost
   vars:
     base_path: 'genie'

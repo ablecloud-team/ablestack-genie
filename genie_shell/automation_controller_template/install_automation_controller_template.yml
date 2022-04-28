@@ -1,14 +1,15 @@
 ---
-- name: Genie VM 템플릿 배포
+- name: Automation Contorller 템플릿 구성
   hosts: localhost
   vars:
     base_path: genie
     
     minikube_cpu: '4'
-    minikube_ram: '8g'
+    minikube_ram: '6g'
     minikube_version: 'v1.25.2'
     kubectl_version: 'v1.23.5'
-    awx_operator_version: '0.17.0'
+    # awx_operator_version: '0.17.0'
+    awx_operator_version: 'devel'
 
     conntrack_version: '1.4.4-10.el8'
     make_version: '1:4.2.1-11.el8'
@@ -25,6 +26,8 @@
 
     genie_admin: 'genie'    # 초기에 생성되는 Genie 대시보드 계정입니다.
     genie_pass: 'password'  # 초기에 생성되는 Genie 대시보드 계정의 패스워드 입니다.
+    awx_image_path: 'stardom3645/awx-genie'  # 커스터 마이징된 AWX EE 이미지 경로입니다.
+    awx_image_version: 'latest'  # 커스터 마이징된 AWX EE 이미지 이름입니다.
     ee_image_name: 'AWX EE (genie_latest)'  # 커스터 마이징된 AWX EE 이미지 이름입니다.
     ee_image_path: 'quay.io/stardom3645/awx-ee:latest'  # 커스터 마이징된 AWX EE 이미지 경로입니다.
     genie_ip: 'localhost' # Genie 대시보드 URL입니다.
@@ -74,6 +77,16 @@
       shell: | 
         curl -LO "https://dl.k8s.io/release/{{ kubectl_version }}/bin/linux/amd64/kubectl"
         install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
+    - name: Kustomize 설치
+      shell: | 
+        curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash
+        install -o root -g root -m 0755 kustomize /usr/local/bin/kustomize
+
+    - name : awx-operator 폴더 삭제
+      file:
+        path: /{{ base_path }}/awx-operator/
+        state: absent
 
     - name: awx-operator 설치
       shell: | 
@@ -145,9 +158,27 @@
       until: kubectl_get_pod_storage_provisioner.stdout == "Running"
       retries: 15
 
+    - name: kustomization.yml 초기화 
+      shell: rm -f {{base_path}}/awx-operator/kustomization.yml
+
+    - name: kustomization.yml 생성
+      lineinfile:
+        path: /{{base_path}}/awx-operator/kustomization.yml
+        create: yes
+        line: "{{ item.line }}"
+      with_items:
+        - {line: 'apiVersion: kustomize.config.k8s.io/v1beta1'}
+        - {line: 'kind: Kustomization'}
+        - {line: 'resources:'}
+        - {line: '  - github.com/ansible/awx-operator/config/default?ref={{ awx_operator_version }}'}
+        - {line: 'images:'}
+        - {line: '  - name: quay.io/ansible/awx-operator'}
+        - {line: '    newTag: {{ awx_operator_version }}'}
+        - {line: 'namespace: awx'}
+
     - name: AWX Operator Pod 배포
       shell: 
-        cmd: make deploy
+        cmd: kustomize build . | kubectl apply -f -
         chdir: "/{{ base_path }}/awx-operator/"
 
     - name: AWX Operator Pod 배포 중
@@ -158,7 +189,7 @@
       shell: kubectl get pods -n awx | awk -F ' ' '/^awx-operator-controller/{ print $2 }' 
       register: kubectl_get_pod_awx_operator
       until: kubectl_get_pod_awx_operator.stdout == "2/2"
-      retries: 15
+      retries: 20
 
     - name: 기본 Namespace를 awx로 변경
       shell: kubectl config set-context --current --namespace=awx
@@ -174,6 +205,10 @@
         - {line: '      image: {{ ee_image_path }}'}
         - {line: '    - name: {{ ee_image_name }}'}
         - {line: '  ee_images:'}
+        - {line: '  image_version: {{ awx_image_version }}'}
+        - {line: '  image: {{ awx_image_path }}'}
+        - {line: '  csrf_cookie_secure: "False"'}        
+        - {line: '  session_cookie_secure: "False"'}
 
     - name: AWX Deployment, Service 배포 준비 2/2
       lineinfile:
@@ -183,9 +218,17 @@
       with_items:
         - {line: '  name: awx'}
 
+    - name: kustomization.yml 생성
+      lineinfile:
+        path: /{{base_path}}/awx-operator/kustomization.yml
+        insertafter: '^resources:'
+        line: "{{ item.line }}"
+      with_items:
+        - {line: '  - awx-demo.yml'} 
+
     - name: AWX Deployment, Service 배포 시작
       shell: 
-        cmd: kubectl apply -n awx -f awx-demo.yml
+        cmd: kustomize build . | kubectl apply -f -
         chdir: "/{{ base_path }}/awx-operator/"
 
     - name: AWX Deployment, Service 상태 체크

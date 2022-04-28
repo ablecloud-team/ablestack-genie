@@ -12,7 +12,7 @@ COLLECTION_CS_VERSION="2.2.3"
 PIP3_CS_VERSION="3.0.0"
 PIP3_SSHPUBKEYS_VERSION="3.3.1"
 
-COLLECTION_AWX_VERSION="20.1.0"
+COLLECTION_AWX_VERSION="21.0.0"
 
 COLLECTION_CRYPTO_VERSION="2.2.4"
 
@@ -39,7 +39,7 @@ ansible-galaxy collection install ngine_io.cloudstack:==$COLLECTION_CS_VERSION
 pip3 install cs==$PIP3_CS_VERSION
 pip3 install sshpubkeys==$PIP3_SSHPUBKEYS_VERSION
 ansible-galaxy collection install awx.awx:==$COLLECTION_AWX_VERSION
-ansible-galaxy collection install community.crypto:==$COLLECTION_AWX_VERSION
+ansible-galaxy collection install community.crypto:==$COLLECTION_CRYPTO_VERSION
 
 ### Check Port Forward Service 설정
 sed -i 's/^SELINUX=enforcing/SELINUX=permissive/' /etc/selinux/config
@@ -53,4 +53,4 @@ systemctl daemon-reload
 systemctl enable check_port_forward
 
 ### Genie VM 템플릿 배포 Playbook 실행
-ansible-playbook $HERE/automation_controller_installation.yml
+ansible-playbook $HERE/install_automation_controller_template.yml
