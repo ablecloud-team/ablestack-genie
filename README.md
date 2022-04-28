@@ -81,7 +81,7 @@ $ sh ./customize_awx_ee.sh
 
 ### AWX 개발환경 구성 준비
 - 경로 "$ /genie/" 에 아래의 목록과 같이 설치에 필요한 파일들을 위치합니다. (소스 위치: ablestack-genie/genie_shell/awx/)
-- 'deploy_awx_devel_env.yml'의 git repository 정보, docker 계정 정보 등을 변경합니다.
+- <span style="color:orange; font-weight:bold">'deploy_awx_devel_env.yml'를 편집하여 'Git repository', 'Docker 계정' 정보 등을 변경합니다.</span>
 
 ```
 $ ls -al
