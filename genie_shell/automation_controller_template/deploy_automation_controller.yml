@@ -35,7 +35,7 @@
 
     - name: 생성된 공개키 Mold SSH 키페어 등록
       cs_sshkeypair:
-        name: "{{ AC_INSTANT_NAME }}"
+        name: "{{ AC_INSTANCE_NAME }}"
         public_key: "{{ lookup('file', '/root/.ssh/id_rsa.pub') }}"
         api_url: "{{ MOLD_API_URL }}"
         api_key: "{{ MOLD_API_KEY }}"
@@ -47,17 +47,17 @@
         api_url: "{{ MOLD_API_URL }}"
         api_key: "{{ MOLD_API_KEY }}"
         api_secret: "{{ MOLD_SECRET_KEY }}"
-        zone: Zone
+        zone: "{{ MOLD_ZONE_NAME }}"
       register: ac_public_ip
 
     - name: Automation Controller static NAT 설정
       cs_staticnat:
         ip_address: "{{ ac_public_ip.ip_address }}"
-        vm: "{{ AC_INSTANT_NAME }}"
+        vm: "{{ AC_INSTANCE_NAME }}"
         api_url: "{{ MOLD_API_URL }}"
         api_key: "{{ MOLD_API_KEY }}"
         api_secret: "{{ MOLD_SECRET_KEY }}"
-        zone: Zone
+        zone: "{{ MOLD_ZONE_NAME }}"
 
     - name: Automation Controller 방화벽 설정
       cs_firewall:
@@ -68,7 +68,7 @@
         api_url: "{{ MOLD_API_URL }}"
         api_key: "{{ MOLD_API_KEY }}"
         api_secret: "{{ MOLD_SECRET_KEY }}"
-        zone: Zone
+        zone: "{{ MOLD_ZONE_NAME }}"
       with_items:
       - 22
       - 5432
@@ -105,7 +105,8 @@
             MOLD_API_URL: "{{ MOLD_API_URL }}"
             MOLD_API_KEY: "{{ MOLD_API_KEY }}"
             MOLD_SECRET_KEY: "{{ MOLD_SECRET_KEY }}"
-            MOLD_SSH_KEYPAIR: "{{ AC_INSTANT_NAME }}"
+            MOLD_ZONE_NAME: "{{ MOLD_ZONE_NAME }}"
+            MOLD_SSH_KEYPAIR: "{{ AC_INSTANCE_NAME }}"
         controller_host: "http://{{ genie_ip }}:80"
         controller_username: admin
         controller_password: "{{ admin_password.stdout }}"
