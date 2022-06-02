@@ -5,13 +5,13 @@
     base_path: 'genie'
     minikube_cpu: '4'
     minikube_ram: '6g'
-    genie_ip: 'localhost' # Genie 대시보드 IP입니다.
+    genie_ip: 'localhost'
   vars_files: 
     - /genie/ansible_vars_files.json
   gather_facts: no
   tasks:
     - name: kube config Home 디렉토리 설정
-      shell: ln -s /root/.minikube /root/.kube/.minikube
+      shell: ln -s -f /root/.minikube /root/.kube/.minikube
 
     - name: Minikube 클러스터 시작
       shell: minikube start --cpus={{ minikube_cpu }} --memory={{ minikube_ram }} --addons=ingress --install-addons=true --driver=docker --force
@@ -41,27 +41,35 @@
         api_key: "{{ MOLD_API_KEY }}"
         api_secret: "{{ MOLD_SECRET_KEY }}"
 
-    - name: Automation Controller public ip 생성
-      cs_ip_address:
+    - name: Automation Controller Egress 설정
+      cs_firewall:
         network: "{{ AC_NETWORK_NAME }}"
         api_url: "{{ MOLD_API_URL }}"
         api_key: "{{ MOLD_API_KEY }}"
         api_secret: "{{ MOLD_SECRET_KEY }}"
         zone: "{{ MOLD_ZONE_NAME }}"
-      register: ac_public_ip
-
-    - name: Automation Controller static NAT 설정
-      cs_staticnat:
-        ip_address: "{{ ac_public_ip.ip_address }}"
+        type: egress
+        protocol: all
+        
+    - name: Automation Controller 포트포워딩 설정
+      cs_portforward:
+        ip_address: "{{ AC_PUBLIC_IP }}"
         vm: "{{ AC_INSTANCE_NAME }}"
         api_url: "{{ MOLD_API_URL }}"
         api_key: "{{ MOLD_API_KEY }}"
         api_secret: "{{ MOLD_SECRET_KEY }}"
         zone: "{{ MOLD_ZONE_NAME }}"
+        public_port: "{{ item }}"
+        private_port: "{{ item }}"
+      with_items:
+      - 80
+      - 22
+      - 5432
+      - 8001
 
     - name: Automation Controller 방화벽 설정
       cs_firewall:
-        ip_address: "{{ ac_public_ip.ip_address }}"
+        ip_address: "{{ AC_PUBLIC_IP }}"
         cidr: 0.0.0.0/0
         port: "{{ item }}"
         protocol: tcp
@@ -70,10 +78,10 @@
         api_secret: "{{ MOLD_SECRET_KEY }}"
         zone: "{{ MOLD_ZONE_NAME }}"
       with_items:
+      - 80
       - 22
       - 5432
       - 8001
-      - 80
 
     - name: Genie Dashboard 응답 대기 중
       shell: curl -o /dev/null -s -w "%{http_code}\n" http://{{ genie_ip }}:80
@@ -111,3 +119,30 @@
         controller_username: admin
         controller_password: "{{ admin_password.stdout }}"
         
+    - name: Genie 프로젝트 생성
+      awx.awx.project:
+        name: genie project
+        default_environment: AWX EE (genie_latest)
+        scm_type: git
+        scm_url: https://github.com/stardom3645/ansible-examples.git
+        scm_branch: genie
+        scm_update_on_launch: yes
+        state: present
+        controller_host: "http://{{ genie_ip }}:80"
+        controller_username: admin
+        controller_password: "{{ admin_password.stdout }}"
+
+    - name: Genie job 템플릿 생성
+      awx.awx.job_template:
+        name: "cs_instance_info"
+        job_type: "run"
+        inventory: "Demo Inventory"
+        project: "genie project"
+        playbook: "cs_module/cs_instance_info2.yml"
+        credentials:
+          - "Automation Controller Credential"
+        state: "present"
+        controller_host: "http://{{ genie_ip }}:80"
+        controller_username: admin
+        controller_password: "{{ admin_password.stdout }}"
+
