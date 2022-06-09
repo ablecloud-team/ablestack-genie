@@ -15,7 +15,9 @@
 
     - name: Minikube 클러스터 시작
       shell: minikube start --cpus={{ minikube_cpu }} --memory={{ minikube_ram }} --addons=ingress --install-addons=true --driver=docker --force
-
+      tags:
+         - start minikube
+         
     - name: Minikube 상태 체크
       shell: minikube status |awk -F ' ' '/{{item.shell}}/{ print $2 }'
       register: minikube_host_stauts
@@ -24,6 +26,9 @@
         - { shell: 'host'}
         - { shell: 'kubelet'}
         - { shell: 'apiserver'}
+
+    - name: Genie service 등록
+      shell: systemctl enable genie.service
 
     - name: 기본 Namespace를 awx로 변경
       shell: kubectl config set-context --current --namespace=awx
@@ -49,7 +54,7 @@
         api_secret: "{{ MOLD_SECRET_KEY }}"
         zone: "{{ MOLD_ZONE_NAME }}"
         type: egress
-        protocol: all
+        protocol: icmp
         
     - name: Automation Controller 포트포워딩 설정
       cs_portforward:
@@ -115,9 +120,28 @@
             MOLD_SECRET_KEY: "{{ MOLD_SECRET_KEY }}"
             MOLD_ZONE_NAME: "{{ MOLD_ZONE_NAME }}"
             MOLD_SSH_KEYPAIR: "{{ AC_INSTANCE_NAME }}"
+            AC_NETWORK_NAME: "{{ AC_NETWORK_NAME }}"
+            MOLD_DEFAULT_URL: "{{ MOLD_DEFAULT_URL }}"
         controller_host: "http://{{ genie_ip }}:80"
         controller_username: admin
         controller_password: "{{ admin_password.stdout }}"
+
+    - name: Genie 원격 저장소 프로젝트 생성 API
+      uri:
+        url: http://{{ genie_ip }}:80/api/v2/projects/
+        method: POST
+        body_format: json
+        user: admin
+        password: "{{ admin_password.stdout }}"
+        force_basic_auth: yes
+        body:
+          {
+            "name": "remote archive",
+            "scm_type": "archive",
+            "scm_url": "http://{{ MOLD_DEFAULT_URL }}:7000/nextcloud.zip",
+            "scm_delete_on_update": "true"
+          }
+        status_code: 201
         
     - name: Genie 프로젝트 생성
       awx.awx.project:

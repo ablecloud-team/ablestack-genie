@@ -1,0 +1,15 @@
+[Unit]
+Description=Genie Minikube Cluster Daemon
+After=network.target sshd.service docker.service
+
+[Service]
+User=root
+Requisite=docker.service
+Type=oneshot
+ExecStart=/genie/genie_cluster/genie_cluster.sh start
+ExecStop=/genie/genie_cluster/genie_cluster.sh stop
+KillMode=process
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

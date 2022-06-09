@@ -46,11 +46,19 @@ sed -i 's/^SELINUX=enforcing/SELINUX=permissive/' /etc/selinux/config
 setenforce 0
 
 mkdir -p /genie/check_port_forward
-cp $HERE/check_port_forward.sh /genie/check_port_forward/
-cp $HERE/check_port_forward.service /etc/systemd/system/check_port_forward.service
+mv $HERE/check_port_forward.sh /genie/check_port_forward/
+mv $HERE/check_port_forward.service /etc/systemd/system/check_port_forward.service
 chmod -R 755 check_port_forward
 systemctl daemon-reload
 systemctl enable check_port_forward
+
+### Genie Cluster Service 설정
+mkdir -p /genie/genie_cluster
+mv $HERE/genie_cluster.sh /genie/genie_cluster/
+mv $HERE/genie_cluster.service /etc/systemd/system/genie_cluster.service
+chmod -R 755 genie_cluster
+systemctl daemon-reload
+systemctl enable genie_cluster
 
 ### Genie VM 템플릿 배포 Playbook 실행
 ansible-playbook $HERE/install_automation_controller_template.yml
