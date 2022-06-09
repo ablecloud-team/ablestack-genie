@@ -21,7 +21,9 @@ $ ls -al
 install_automation_controller_template.sh   # Automation Controller 템플릿을 구성하기 위한 환경설정 쉘 스크립트
 install_automation_controller_template.yml  # Automation Controller 템플릿을 구성하기 위한 플레이북
 check_port_forward.service                  # k8s 포트포워딩 상태 체크 서비스
-check_port_forward.sh                       # k8s 포트포워딩 상태 체크 서비스로 작동되는 쉘 스크립트
+check_port_forward.sh                       # k8s 포트포워딩 상태 체크 서비스로 실행되는 쉘 스크립트
+genie_cluster.service                       # Minikube cluster 관리 서비스
+genie_cluster.sh                            # Minikube cluster 서비스로 실행되는 쉘 스크립트
 deploy_automation_controller.yml            # Automation Controller가 genie 사용자에 의해 배포될 때 cloud-init로 실행되는 플래이북 
 ```
 
