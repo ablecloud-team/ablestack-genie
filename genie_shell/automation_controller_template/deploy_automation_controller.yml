@@ -46,15 +46,15 @@
         api_key: "{{ MOLD_API_KEY }}"
         api_secret: "{{ MOLD_SECRET_KEY }}"
 
-    - name: Automation Controller Egress 설정
-      cs_firewall:
-        network: "{{ AC_NETWORK_NAME }}"
-        api_url: "{{ MOLD_API_URL }}"
-        api_key: "{{ MOLD_API_KEY }}"
-        api_secret: "{{ MOLD_SECRET_KEY }}"
-        zone: "{{ MOLD_ZONE_NAME }}"
-        type: egress
-        protocol: icmp
+    # - name: Automation Controller Egress 설정
+    #   cs_firewall:
+    #     network: "{{ AC_NETWORK_NAME }}"
+    #     api_url: "{{ MOLD_API_URL }}"
+    #     api_key: "{{ MOLD_API_KEY }}"
+    #     api_secret: "{{ MOLD_SECRET_KEY }}"
+    #     zone: "{{ MOLD_ZONE_NAME }}"
+    #     type: egress
+    #     protocol: icmp
         
     - name: Automation Controller 포트포워딩 설정
       cs_portforward:
