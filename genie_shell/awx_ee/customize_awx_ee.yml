@@ -13,12 +13,12 @@
     collection_cloudstack_version: '2.2.3'
     pip3_cloudstack_version: '3.0.0'
 
-    docker_hub_user_id: 'stardom3645'
+    docker_hub_user_id: 'ablecloudteam'
     docker_hub_user_password: 'Ablecloud1!'
     awx_ee_officail_version: 'latest'
     container_name: 'awx-ee'
     docker_commit_msg : 'ABLESTACK Automation Service EE' 
-    docker_commit_repo : 'stardom3645/awx-ee' 
+    docker_commit_repo : 'ablecloudteam/genie-awx-ee' 
     docker_commit_tag : 'latest' 
 
     http_host: 'html'

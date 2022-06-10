@@ -11,7 +11,7 @@
     docker_ce_verion: '3:20.10.14-3.el8'
     docker_cli_verion: '1:20.10.14-3.el8'
     docker_containerd_io_verion: '1.5.11-3.1.el8'
-    docker_hub_user_id: 'stardom3645'
+    docker_hub_user_id: 'ablecloudteam'
     docker_hub_user_password: 'Ablecloud1!'
     docker_compose_version: 'v2.4.1'
 
@@ -22,7 +22,7 @@
 
     container_name: 'awx'
     docker_commit_msg : 'ABLESTACK Automation Service' 
-    docker_commit_repo : 'stardom3645/awx' 
+    docker_commit_repo : 'ablecloudteam/genie-awx' 
     docker_commit_tag : 'latest'
 
   gather_facts: no

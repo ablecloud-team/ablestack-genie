@@ -26,10 +26,10 @@
 
     genie_admin: 'genie'    # 초기에 생성되는 Genie 대시보드 계정입니다.
     genie_pass: 'password'  # 초기에 생성되는 Genie 대시보드 계정의 패스워드 입니다.
-    awx_image_path: 'stardom3645/awx-genie'  # 커스터 마이징된 AWX EE 이미지 경로입니다.
-    awx_image_version: 'latest'  # 커스터 마이징된 AWX EE 이미지 이름입니다.
+    awx_image_path: 'ablecloudteam/genie-awx'  # 커스터 마이징된 AWX 이미지 경로입니다.
+    awx_image_version: 'latest'  # 커스터 마이징된 AWX 이미지 이름입니다.
     ee_image_name: 'AWX EE (genie_latest)'  # 커스터 마이징된 AWX EE 이미지 이름입니다.
-    ee_image_path: 'quay.io/stardom3645/awx-ee:latest'  # 커스터 마이징된 AWX EE 이미지 경로입니다.
+    ee_image_path: 'ablecloudteam/genie-awx-ee'  # 커스터 마이징된 AWX EE 이미지 경로입니다.
     genie_ip: 'localhost' # Genie 대시보드 URL입니다.
   gather_facts: no
   tasks:

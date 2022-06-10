@@ -131,11 +131,11 @@ deploy_awx_devel_env.yml  # Automation Controller AWX 개발환경을 구성하�
 - 컨테이너 이미지로 빌드 (이미지 이름 및 테그 확인 후 실행합니다.)
   ```
   $ ansible-playbook tools/ansible/build.yml \
-    -e awx_image=stardom3645/awx-genie \
+    -e awx_image=ablecloudteam/genie-awx \
     -e awx_image_tag=latest -v
   ```
 
 - 컨테이너 이미지 푸시 (저장소 확인 후 실행합니다.)
   ```
-  $ docker push stardom3645/awx-genie:latest
+  $ docker push ablecloudteam/genie-awx:latest
   ```
