@@ -46,6 +46,9 @@ def createArgumentParser():
     #--the description of the running service
     parser.add_argument('-d', '--description', metavar='the description of the running service', type=str, help='input Value the description of the running service')
 
+    #--the description of how to access the service
+    parser.add_argument('-ai', '--access-info', metavar='the description of how to access the service', type=str, help='input Value the description of how to access the service')
+
     #--the ID of the deployed service
     parser.add_argument('-gid', '--deployed-group-id', metavar='the ID of the deployed service', type=str, help='input Value the ID of the deployed service')
 
@@ -107,6 +110,7 @@ def addDeployedResourceGroup(args):
     request['command']=args.commond
     request['name']=args.name
     request['description']=args.description
+    request['accessinfo']=args.access_info
     request['zoneid']=args.zone_id
     request['controllerid']=args.automation_controller_id
     request['response']='json'
@@ -161,6 +165,7 @@ def updateDeployedResourceGroup(args):
     request={}
     request['command']=args.commond
     request['id']=args.deployed_group_id
+    request['accessinfo']=args.access_info
     request['state']=stateResultChecker(args.state)
     request['response']='json'
     request['apikey']=args.apikey
@@ -189,6 +194,8 @@ if __name__ == '__main__':
             print ('name is null')
         elif args.description is None:
             print ('description is null')
+        elif args.access_info is None:
+            print ('access_info is null')
         elif args.zone_id is None:
             print ('zone_id is null')
         elif args.automation_controller_id is None:
@@ -229,6 +236,8 @@ if __name__ == '__main__':
         #필수값 체크
         if args.deployed_group_id is None:
             print ('deployed group id is null')
+        elif args.access_info is None:
+            print ('access_info is null')
         elif args.state is None:
             print ('state is null')
         else:
@@ -257,7 +266,8 @@ python mold_genie_api.py \
 	-zid zone_uuid \
     -acid automation_contriller_uuid \
 	-n ServiceName \
-	-d 'Service description'
+	-d 'Service description' \
+    -ai 'http://ip:80으로 접속하세요.'
 
 서비스 단위별 상태 등록
 python mold_genie_api.py \
@@ -294,6 +304,7 @@ python mold_genie_api.py \
 	-ak api_key_value \
 	-sk secret_key_value \
 	-gid group_uuid \
-	-s Active
+	-s Active \
+    -ai 'http://ip:80으로 접속하세요.'
 
 '''
