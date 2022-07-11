@@ -1,6 +1,7 @@
 #!/bin/bash
 
 CMD="$1"
+pid_proxy=`ps -ef | grep "kubectl proxy" | grep -v 'grep' | awk '{print $2}'`
 
 if [ "$CMD" == "start" ] ; then
 
@@ -19,3 +20,8 @@ else
     exit
 
 fi
+
+if [ -n $pid_proxy ] ; then
+    kill -9 $pid_proxy
+fi
+

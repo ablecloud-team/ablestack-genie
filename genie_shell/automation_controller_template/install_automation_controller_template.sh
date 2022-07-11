@@ -41,7 +41,7 @@ pip3 install sshpubkeys==$PIP3_SSHPUBKEYS_VERSION
 ansible-galaxy collection install awx.awx:==$COLLECTION_AWX_VERSION
 ansible-galaxy collection install community.crypto:==$COLLECTION_CRYPTO_VERSION
 
-### Check Port Forward Service 설정
+### Check Port Forward Service 설정 (쿠버네티스 포트포워딩 유지하는 서비스)
 sed -i 's/^SELINUX=enforcing/SELINUX=permissive/' /etc/selinux/config
 setenforce 0
 
@@ -52,7 +52,7 @@ chmod -R 755 check_port_forward
 systemctl daemon-reload
 systemctl enable check_port_forward
 
-### Genie Cluster Service 설정
+### Genie Cluster Service 설정 (재시작 시, minikube 다시 실행하는 서비스)
 mkdir -p /genie/genie_cluster
 mv $HERE/genie_cluster.sh /genie/genie_cluster/
 mv $HERE/genie_cluster.service /etc/systemd/system/genie_cluster.service
