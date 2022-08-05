@@ -6,7 +6,7 @@ Docker 기반의 MiniKube를 사용하고 Single Node 아키텍처를 적용합�
 - OS: CentOS 8.5 2111
 - 요구 사양:
   - Automation Controller VM: 8Core 8G
-  - Minikube Cluster: 4Core 6G
+  - Minikube Cluster: 2Core 3G
 
 
 ## Automation Controller 템플릿 구성 방법
