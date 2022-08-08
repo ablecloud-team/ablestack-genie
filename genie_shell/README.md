@@ -32,7 +32,7 @@ $ sh ./install_automation_controller_template.sh
 <hr/>
 <hr/>
 
-## Execution Environment(EE) 이미지 커스터마이징
+## Genie Execution Environment(Genie-EE) 이미지 커스터마이징
 다양한 플랫폼에서 일관성 있게 자동화 절차가 실행되도록 자동화 실행 환경(EE)을 사용합니다.
 EE는 k8s환경에서 컨테이너 이미지로 구동되며 Ansible 플레이북을 실행하는 역할을 합니다. 
 일관성있는 자동화 환경을 위해 미리 지정된 저장소의 EE이미지를 다운로드 받아 컨테이너 이미지를 실행하기 때문에
@@ -68,7 +68,7 @@ $ sh ./customize_awx_ee.sh
 <hr/>
 <hr/>
 
-## AWX 개발환경 구성 및 컨테이너 이미지 생성
+## AWX(Genie Dashboard) 개발환경 구성 및 컨테이너 이미지 생성
 개발환경 플레이북을 실행하여 구성합니다.
 개발환경 구성 이후 backend, ui 서버 동작은 개발자가 명령어를 통해 실행합니다.
 
