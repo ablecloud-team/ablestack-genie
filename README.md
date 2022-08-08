@@ -10,6 +10,7 @@ Docker 기반의 MiniKube를 사용하고 Single Node 아키텍처를 적용합�
 
 ## ABLESTACK Genie 개발 구조
 실행환경(Genie-EE) 도커 이미지와 Genie-Dashboard 도커이미지를 개발, 빌드한 후 이를 활용하여 Automation Controller 템플릿을 구성합니다.
+![image](https://user-images.githubusercontent.com/34114265/183316948-5694a0b8-5de0-402b-91bf-c202e9ec0ac2.png)
 
 ## Automation Controller 템플릿 구성 방법
 Genie Shell을 활용하여 Genie Automation Controller 템플릿 구성을 쉽게 할 수 있습니다. <br>
