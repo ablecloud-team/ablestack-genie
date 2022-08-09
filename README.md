@@ -14,6 +14,6 @@ Docker 기반의 MiniKube를 사용하고 Single Node 아키텍처를 적용합�
 
 ## Automation Controller 템플릿 구성 방법
 Genie Shell을 활용하여 Genie Automation Controller 템플릿 구성을 쉽게 할 수 있습니다. <br>
-<b>[Genie Shell 바로가기](./genie_shell/)</b>
+<b>[Genie Shell 바로가기](./genie-shell/)</b>
 
 
