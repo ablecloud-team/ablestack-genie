@@ -21,12 +21,12 @@ COLLECTION_CRYPTO_VERSION="2.2.4"
 HERE=$(dirname $(realpath $0))
 
 ### Repositories 설정
-sed -i 's/mirrorlist/#mirrorlist/' /etc/yum.repos.d/CentOS*
-sed -i 's/#baseurl=http:\/\/mirror\.centos\.org/baseurl=http:\/\/mirror.ablecloud.io/' /etc/yum.repos.d/CentOS*
-sed -i 's/$releasever/8-stream/' /etc/yum.repos.d/CentOS*
-mkdir /etc/yum.repos.d/unused
-mv /etc/yum.repos.d/CentOS-Linux-Media* /etc/yum.repos.d/unused/
-mv /etc/yum.repos.d/CentOS-Linux-FastTrack.repo /etc/yum.repos.d/unused/
+# sed -i 's/mirrorlist/#mirrorlist/' /etc/yum.repos.d/CentOS*
+# sed -i 's/#baseurl=http:\/\/mirror\.centos\.org/baseurl=http:\/\/mirror.ablecloud.io/' /etc/yum.repos.d/CentOS*
+# sed -i 's/$releasever/8-stream/' /etc/yum.repos.d/CentOS*
+# mkdir /etc/yum.repos.d/unused
+# mv /etc/yum.repos.d/CentOS-Linux-Media* /etc/yum.repos.d/unused/
+# mv /etc/yum.repos.d/CentOS-Linux-FastTrack.repo /etc/yum.repos.d/unused/
 
 
 ### Ansible and collections 설치
