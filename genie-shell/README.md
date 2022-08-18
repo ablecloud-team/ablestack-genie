@@ -35,6 +35,7 @@ $ sh ./install_automation_controller_template.sh
   - 'centos-8-cloudinit-for-genie-ac-original.qcow2' 파일 필요 -> virsh로 vm을 생성할 호스트에 위치해야 합니다. (addr:10.10.1.2)
     - Nas의 images 폴더에 위치해 있으며 CentOs8.5-2111 로 구성되어 'install_automation_controller_template.sh' 파일에 명시된 패키지 설치가 가능한 상태의 템플릿이어야 합니다.
   - 'centos-8-cloudinit-for-genie-ac.xml' 파일 필요 -> virsh로 vm을 생성할 호스트에 위치해야 합니다. (addr:10.10.1.2)
+    - Git 저장소 'ablestack-genie/genie-shell/etc/'에 위치해 있습니다.
 - 실행 방법
   - 'jenkins.ablecloud.io'에 로그인한 후, 'make-genie-template-using-qcow2' 젠킨스 프로젝트를 시작합니다.
   - virsh로 vm을 생성한 호스트에 위치한 centos-8-cloudinit-for-genie-ac.qcow2 파일을 Nas의 images 폴더에 복사하여 Automation Controller 템플릿으로 사용합니다.
