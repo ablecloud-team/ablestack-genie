@@ -17,13 +17,13 @@ genie_cluster.sh                            # Minikube cluster 서비스로 실�
 deploy_automation_controller.yml            # Automation Controller가 genie 사용자에 의해 배포될 때 cloud-init로 실행되는 플래이북 
 ```
 
-### Automation Controller 템플릿 구성 쉘 스크립트 실행
+#### Automation Controller 템플릿 구성 쉘 스크립트 실행
 
 ```
 $ sh ./install_automation_controller_template.sh
 ```
 
-### Automation Controller 템플릿 구성 확인
+#### Automation Controller 템플릿 구성 확인
 - mold에서 public ip를 할당합니다.
 - 80/tcp 포트 허용합니다.
 - http://<<public_ip>>:80 접속합니다.
