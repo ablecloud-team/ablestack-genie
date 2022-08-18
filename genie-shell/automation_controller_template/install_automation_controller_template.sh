@@ -48,7 +48,8 @@ setenforce 0
 mkdir -p /genie/check_port_forward
 mv $HERE/check_port_forward.sh /genie/check_port_forward/
 mv $HERE/check_port_forward.service /etc/systemd/system/check_port_forward.service
-chmod -R 755 check_port_forward
+chmod -R 755 /genie/check_port_forward
+chmod -R 755 /etc/systemd/system/check_port_forward.service
 systemctl daemon-reload
 systemctl enable check_port_forward
 
@@ -56,7 +57,8 @@ systemctl enable check_port_forward
 mkdir -p /genie/genie_cluster
 mv $HERE/genie_cluster.sh /genie/genie_cluster/
 mv $HERE/genie_cluster.service /etc/systemd/system/genie_cluster.service
-chmod -R 755 genie_cluster
+chmod -R 755 /genie/genie_cluster
+chmod -R 755 /etc/systemd/system/genie_cluster.service
 systemctl daemon-reload
 systemctl enable genie_cluster
 
