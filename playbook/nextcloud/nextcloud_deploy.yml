@@ -1,0 +1,340 @@
+---
+### Deploy VirtualMachine ###
+- name: Genie를 활용한 Nextcloud 배포
+  hosts: localhost
+  gather_facts: no
+  vars:
+    base_path: "genie"
+    genie_ip: "localhost"
+  tasks:
+
+  - name: uuid 생성
+    set_fact:
+      uuid: "{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=5') }}"
+  - name: instance명에 uuid 추가
+    set_fact:
+      instance_nm: "{{ instance_name }}-{{ uuid }}"
+
+  - name: 가상머신 생성 ({{ instance_nm }})
+    cs_instance:
+      api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+      api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+      api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+      zone: "{{ lookup('env', 'MOLD_ZONE_NAME') }}"
+      name: "{{ instance_nm }}"
+      template: "{{ instance_temp }}"
+      service_offering: "{{ instance_computeoffer }}"
+      ssh_key: "{{ lookup('env', 'MOLD_SSH_KEYPAIR') }}"
+      user_data: |
+          #cloud-config
+          disable_root: false
+          ssh_pwauth: true
+      networks: "{{ lookup('env', 'AC_NETWORK_NAME') }}"
+    register: vm
+
+  - name: 생성한 가상머신이 부팅이 완료될 때까지 대기
+    wait_for_connection:
+      delay: 20
+      timeout: 300
+
+  # - name: 배포한 가상머신 정보 수집
+  #   cs_instance_info:
+  #     api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+  #     api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+  #     api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+  #     name: "{{ instance_nm }}"
+  #   delegate_to: localhost
+  #   register: vm
+
+  - name: 배포 가상머신 ip 정보 수집
+    debug:
+      msg: "{{ vm.default_ip }}"
+
+  - name: 배포 가상머신 인메모리 inventory에 등록
+    add_host:
+      hostname: "{{ vm.default_ip }}"
+      groups:
+        - deployVmIp
+
+  - name: Create Public IP
+    cs_ip_address:
+      api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+      api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+      api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+      zone: "{{ lookup('env', 'MOLD_ZONE_NAME') }}"
+      network: "{{ lookup('env', 'AC_NETWORK_NAME') }}"
+    register: ac_public_ip
+
+  - name: Public IP 정보 수집
+    debug:
+      msg: "{{ ac_public_ip.ip_address }}"
+
+  - name: Create a static NAT for "{{ ac_public_ip.ip_address }}" to "{{ instance_nm }}"
+    cs_staticnat:
+      api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+      api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+      api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+      ip_address: "{{ ac_public_ip.ip_address }}"
+      zone: "{{ lookup('env', 'MOLD_ZONE_NAME') }}"
+      vm: "{{ instance_nm }}"
+    delegate_to: localhost
+
+  - name: Allow port for public ip
+    cs_firewall:
+      api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+      api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+      api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+      ip_address: "{{ ac_public_ip.ip_address }}"
+      zone: "{{ lookup('env', 'MOLD_ZONE_NAME') }}"
+      start_port: "{{ item.port }}"
+      end_port: "{{ item.port }}"
+      protocol: "{{ item.protocol }}"
+    with_items:
+        - {port: 80, protocol: tcp}
+        - {port: 22, protocol: tcp}
+    delegate_to: localhost
+
+#=============================================================
+
+  - name: AWX 초기 관리자 패스워드 추출
+    shell: kubectl get -n awx secret awx-admin-password -o jsonpath="{.data.password}" | base64 --decode
+    register: admin_password
+    delegate_to: "{{ lookup('env', 'AC_NETWORK_ADDRESS') }}"
+
+  - name: Create nextcloud state check playbook
+    awx.awx.job_template:
+      name: 넥스트클라우드 - 상태체크 - {{ uuid }}
+      description: 넥스트클라우드의 서비스 상태를 체크합니다.
+      job_type: "run"
+      inventory: Genie Inventory
+      project: Genie Git Project
+      playbook: nextcloud/nextcloud_check.yml
+      credentials:
+        - "Automation Controller Credential"
+      state: "present"
+      controller_host: "http://{{ genie_ip }}:80"
+      controller_username: admin
+      controller_password: "{{ admin_password.stdout }}"
+      extra_vars: 
+        instance_nm: "{{ instance_nm }}"
+        uuid: "{{ uuid }}"
+    delegate_to: "{{ lookup('env', 'AC_NETWORK_ADDRESS') }}"
+
+  - name: Create nextcloud delete playbook
+    awx.awx.job_template:
+      name: 넥스트클라우드 - 삭제 - {{ uuid }}
+      description: 넥스트클라우드를 삭제합니다.
+      job_type: "run"
+      inventory: Genie Inventory
+      project: Genie Git Project
+      playbook: nextcloud/nextcloud_destroy.yml
+      credentials:
+        - "Automation Controller Credential"
+      state: "present"
+      controller_host: "http://{{ genie_ip }}:80"
+      controller_username: admin
+      controller_password: "{{ admin_password.stdout }}"
+      extra_vars: 
+        instance_nm: "{{ instance_nm }}"
+        uuid: "{{ uuid }}"
+    delegate_to: "{{ lookup('env', 'AC_NETWORK_ADDRESS') }}"
+
+  # - name: 상태체크 job 실행
+  #   awx.awx.job_launch:
+  #     job_template: 넥스트클라우드 - 상태체크 - {{ uuid }}
+  #     controller_host: "http://{{ genie_ip }}:80"
+  #     controller_username: admin
+  #     controller_password: "{{ admin_password.stdout }}"
+  #   delegate_to: "{{ lookup('env', 'AC_NETWORK_ADDRESS') }}"
+
+  - name: Genie job 스케줄러 생성
+    awx.awx.schedule:
+      name: 넥스트클라우드 - 상태체크 - {{ uuid }}
+      state: present
+      unified_job_template: 넥스트클라우드 - 상태체크 - {{ uuid }}
+      rrule: "DTSTART;TZID=Asia/Seoul:20220101T120000 RRULE:FREQ=MINUTELY;INTERVAL=1"
+      controller_host: "http://{{ genie_ip }}:80"
+      controller_username: admin
+      controller_password: "{{ admin_password.stdout }}"
+    delegate_to: "{{ lookup('env', 'AC_NETWORK_ADDRESS') }}"
+
+#=============================================================
+
+### Deploy Nextcloud ###
+- name: Deploy Nextcloud
+  hosts: deployVmIp
+  gather_facts: no
+  vars:
+    httpd_packages:
+      - "httpd"
+      - "mod_ssl"
+      - "mod_security"
+    php_packages:
+      - "php"
+      - "php-gd"
+      - "php-mbstring"
+      - "php-intl"
+      - "php-pecl-apcu"
+      - "php-mysqlnd"
+      #- "php-pecl-redis"
+      - "php-opcache"
+      #- "php-imagick"
+      - "php-zip"
+      - "php-process"
+      - "php-json"
+      - "php-ldap"
+      - "php-xml"
+    mariadb_packages:
+      - "mariadb-server"
+      - "python3-PyMySQL"
+    mariadb_root_pass: "password"
+    # nextcloud_code: "https://download.nextcloud.com/server/releases/nextcloud-20.0.9.zip"
+    nextcloud_code: "https://images.ablecloud.io/genie/nextcloud/nextcloud-20.0.9.zip"
+    nextcloud_db_name: "nextcloud"
+    nextcloud_db_user: "nextcloud"
+    nextcloud_db_pass: "password"
+    nextcloud_admin_name: "user"
+    nextcloud_admin_pass: "password"
+    nextcloud_data_dir: "/var/www/html/nextcloud/data"
+  tasks:
+  
+    # Install Httpd
+    - name: Install httpd
+      ansible.builtin.package:
+        name: "{{ httpd_packages }}"
+        state: present
+      become: true
+    - name: Install php
+      ansible.builtin.package:
+        name: "{{ php_packages }}"
+        state: present
+      become: true
+    - name: Start httpd service
+      systemd: name=httpd state=started enabled=yes
+
+    # Install Mariadb
+    - name: Install mariadb
+      ansible.builtin.package:
+        name: "{{ mariadb_packages }}"
+        state: present
+      become: true
+    - name: Start mariadb service
+      systemd: name=mariadb state=started enabled=yes
+    - name: Configure mariadb - root user
+      community.mysql.mysql_user:
+        name: root
+        password: "{{ mariadb_root_pass }}"
+        check_implicit_admin: true
+        login_user: root
+        login_password: "{{ mariadb_root_pass }}"
+        login_unix_socket: "/var/lib/mysql/mysql.sock"
+      become: true
+    - name: Configure mariadb anonymous user
+      community.mysql.mysql_user:
+        name: ""
+        state: absent
+        host_all: true
+        login_user: root
+        login_password: "{{ mariadb_root_pass }}"
+        login_unix_socket: "/var/lib/mysql/mysql.sock"
+      become: true
+    - name: Configure mariadb - test database
+      community.mysql.mysql_db:
+        name: test
+        state: absent
+        login_user: root
+        login_password: "{{ mariadb_root_pass }}"
+        login_unix_socket: "/var/lib/mysql/mysql.sock"
+      become: true
+
+    # Install Nextcloud
+    - name: Install dependencies
+      ansible.builtin.package:
+        name: unzip
+        state: present
+      become: true
+    - name: Install Nextcloud
+      ansible.builtin.unarchive:
+        src: "{{ nextcloud_code }}"
+        remote_src: true
+        dest: "/var/www/html/"
+        keep_newer: true
+        owner: "apache"
+        group: "apache"
+        setype: "httpd_sys_rw_content_t"
+      become: true
+
+    - name: Restart Httpd
+      systemd: name=httpd state=restarted
+      become: yes
+    - name: Configure Nextcloud - httpd selinux
+      ansible.posix.seboolean:
+        name: "{{ item }}"
+        persistent: true
+        state: true
+      become: true
+      loop:
+        - "httpd_can_network_connect_db"
+        - "httpd_unified"
+    - name: Configure Nextcloud - mariadb db
+      community.mysql.mysql_db:
+        name: "{{ nextcloud_db_name }}"
+        state: "present"
+        login_user: "root"
+        login_password: "{{ mariadb_root_pass }}"
+        login_unix_socket: "/var/lib/mysql/mysql.sock"
+      become: true
+    - name: Configure Nextcloud - mariadb user
+      community.mysql.mysql_user:
+        name: "{{ nextcloud_db_user }}"
+        password: "{{ nextcloud_db_pass }}"
+        priv: "{{ nextcloud_db_name }}.*:ALL"
+        login_user: "root"
+        login_password: "{{ mariadb_root_pass }}"
+        login_unix_socket: "/var/lib/mysql/mysql.sock"
+      become: true
+    - name: Create data directory
+      ansible.builtin.file:
+        path: "{{ nextcloud_data_dir }}"
+        state: "directory"
+        owner: "apache"
+        group: "apache"
+        mode: 0750
+        setype: "httpd_sys_rw_content_t"
+      become: true
+    - name: Check for CAN_INSTALL
+      ansible.builtin.stat:
+        path: "/var/www/html/nextcloud/config/CAN_INSTALL"
+      register: "r_CAN_INSTALL"
+      become: true
+    # - name: "Configure Nextcloud - autoconfig"
+    #   ansible.builtin.template:
+    #     src: "/home/runner/autoconfig.php.j2"
+    #     dest: "/var/www/html/nextcloud/config/autoconfig.php"
+    #     owner: "apache"
+    #     group: "apache"
+    #     mode: 0640
+    #     setype: "httpd_sys_rw_content_t"
+    #   become: true
+    #   when:
+    #     - "r_CAN_INSTALL.stat.exists | bool"
+
+    # Install Firewall
+    - name: Install firewalld
+      ansible.builtin.package:
+        name: firewalld
+        state: present
+      become: true
+    - name: Start firewalld service
+      systemd: name=firewalld state=started enabled=yes
+    - name: Manage Firewalld
+      ansible.posix.firewalld:
+        service: "{{ item }}"
+        state: enabled
+        immediate: true
+        permanent: true
+      become: true
+      loop:
+        - "http"
+        - "https"
+

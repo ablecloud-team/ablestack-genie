@@ -1,0 +1,170 @@
+---
+- name: AWX 템플릿 배포
+  hosts: genie_vm
+  vars:
+    base_path: 'genie'
+    genie_ip: 'localhost'
+  gather_facts: no
+  tasks:
+
+  - name: AWX 초기 관리자 패스워드 추출
+    shell: kubectl get -n awx secret awx-admin-password -o jsonpath="{.data.password}" | base64 --decode
+    register: admin_password
+
+  # Wordpress
+  - name: Create wordpress deploy playbook
+    awx.awx.job_template:
+      name: 워드프레스 - 배포
+      description: 워드프레스를 배포합니다. 워드프레스는 PHP로 작성된 온라인 오픈 소스 웹 사이트 저작 도구입니다.
+      job_type: "run"
+      inventory: Genie Inventory
+      project: Genie Git Project
+      playbook: wordpress/wordpress_deploy.yml
+      credentials:
+        - "Automation Controller Credential"
+      state: "present"
+      controller_host: "http://{{ genie_ip }}:80"
+      controller_username: admin
+      controller_password: "{{ admin_password.stdout }}"
+      extra_vars: 
+        instance_name: "wordpress-deploy-vm"
+        instance_temp: "CentOS-8-cloudinit"
+        instance_computeoffer: "2C-4GB-RBD"
+
+  # - name: Create wordpress state check playbook
+  #   awx.awx.job_template:
+  #     name: 워드프레스 - 상태체크
+  #     description: 워드프레스의 서비스 상태를 체크합니다.
+  #     job_type: "run"
+  #     inventory: Genie Inventory
+  #     project: Genie Git Project
+  #     playbook: wordpress/wordpress_check.yml
+  #     credentials:
+  #       - "Automation Controller Credential"
+  #     state: "present"
+  #     controller_host: "http://{{ genie_ip }}:80"
+  #     controller_username: admin
+  #     controller_password: "{{ admin_password.stdout }}"
+
+  # - name: Create wordpress delete playbook
+  #   awx.awx.job_template:
+  #     name: 워드프레스 - 삭제
+  #     description: 워드프레스를 삭제합니다.
+  #     job_type: "run"
+  #     inventory: Genie Inventory
+  #     project: Genie Git Project
+  #     playbook: wordpress/wordpress_destroy.yml
+  #     credentials:
+  #       - "Automation Controller Credential"
+  #     state: "present"
+  #     controller_host: "http://{{ genie_ip }}:80"
+  #     controller_username: admin
+  #     controller_password: "{{ admin_password.stdout }}"
+      
+  # Nextcloud
+  # - name: Generate random string with length 5
+  #   debug:
+  #     var: lookup('community.general.random_string', length=5)
+
+  - name: Create nextcloud deploy playbook
+    awx.awx.job_template:
+      name: 넥스트클라우드 - 배포
+      description: 넥스트클라우드를 배포합니다. 넥스트클라우드는 파일 호스팅 서비스를 개발하고 사용하기 위한 클라이언트-서버 소프트웨어입니다.
+      job_type: "run"
+      inventory: Genie Inventory
+      project: Genie Git Project
+      playbook: nextcloud/nextcloud_deploy.yml
+      credentials:
+        - "Automation Controller Credential"
+      state: "present"
+      controller_host: "http://{{ genie_ip }}:80"
+      controller_username: admin
+      controller_password: "{{ admin_password.stdout }}"
+      extra_vars: 
+        # uuid: "{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=5') }}"
+        instance_name: "nextcloud-deploy-vm"
+        instance_temp: "CentOS-8-cloudinit"
+        instance_computeoffer: "2C-4GB-RBD"
+
+  # - name: Create nextcloud state check playbook
+  #   awx.awx.job_template:
+  #     name: 넥스트클라우드 - 상태체크
+  #     description: 넥스트클라우드 상태체크
+  #     job_type: "run"
+  #     inventory: Genie Inventory
+  #     project: Genie Git Project
+  #     playbook: nextcloud/nextcloud_check.yml
+  #     credentials:
+  #       - "Automation Controller Credential"
+  #     state: "present"
+  #     controller_host: "http://{{ genie_ip }}:80"
+  #     controller_username: admin
+  #     controller_password: "{{ admin_password.stdout }}"
+
+  # - name: Create nextcloud delete playbook
+  #   awx.awx.job_template:
+  #     name: 넥스트클라우드 - 삭제
+  #     description: 넥스트클라우드 삭제
+  #     job_type: "run"
+  #     inventory: Genie Inventory
+  #     project: Genie Git Project
+  #     playbook: nextcloud/nextcloud_destroy.yml
+  #     credentials:
+  #       - "Automation Controller Credential"
+  #     state: "present"
+  #     controller_host: "http://{{ genie_ip }}:80"
+  #     controller_username: admin
+  #     controller_password: "{{ admin_password.stdout }}"
+
+  # eGovFrame
+  - name: Create eGovFrame deploy playbook
+    awx.awx.job_template:
+      name: 전자정부프레임워크 웹서비스 - 배포
+      description: 전자정부프레임워크 웹서비스를 배포합니다. 서버는 물리적으로 3개의 계층으로 구분되며 WEB 서버(클라이언트 계층), WAS 서버(응용 계층), DB 서버(데이터 계층)로 구성됩니다.
+      job_type: "run"
+      inventory: Genie Inventory
+      project: Genie Git Project
+      playbook: eGovFrame/eGov_deploy.yml
+      credentials:
+        - "Automation Controller Credential"
+      state: "present"
+      controller_host: "http://{{ genie_ip }}:80"
+      controller_username: admin
+      controller_password: "{{ admin_password.stdout }}"
+      extra_vars: 
+        # uuid: "{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=5') }}"
+        db_instance_name: "db-deploy-vm"
+        was_instance_name: "was-deploy-vm"
+        web_instance_name: "web-deploy-vm"
+        instance_temp: "CentOS-8-cloudinit"
+        instance_computeoffer: "2C-4GB-RBD"
+
+  # - name: Create eGovFrame state check playbook
+  #   awx.awx.job_template:
+  #     name: 전자정부프레임워크 웹서비스 - 상태체크
+  #     description: 전자정부프레임워크 웹서비스의 서비스 상태를 체크합니다.
+  #     job_type: "run"
+  #     inventory: Genie Inventory
+  #     project: Genie Git Project
+  #     playbook: eGovFrame/eGov_check.yml
+  #     credentials:
+  #       - "Automation Controller Credential"
+  #     state: "present"
+  #     controller_host: "http://{{ genie_ip }}:80"
+  #     controller_username: admin
+  #     controller_password: "{{ admin_password.stdout }}"
+
+  # - name: Create eGovFrame delete playbook
+  #   awx.awx.job_template:
+  #     name: 전자정부프레임워크 웹서비스 - 삭제
+  #     description: 전자정부프레임워크 웹서비스를 삭제합니다.
+  #     job_type: "run"
+  #     inventory: Genie Inventory
+  #     project: Genie Git Project
+  #     playbook: eGovFrame/eGov_destroy.yml
+  #     credentials:
+  #       - "Automation Controller Credential"
+  #     state: "present"
+  #     controller_host: "http://{{ genie_ip }}:80"
+  #     controller_username: admin
+  #     controller_password: "{{ admin_password.stdout }}"    

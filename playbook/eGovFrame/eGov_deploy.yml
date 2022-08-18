@@ -1,0 +1,472 @@
+---
+### Deploy VirtualMachine ###
+- name: Genie를 활용한 eGov WebService 배포
+  hosts: localhost
+  gather_facts: no
+  vars:
+    base_path: "genie"
+    genie_ip: "localhost"
+  tasks:
+
+  - name: uuid 생성
+    set_fact:
+      uuid: "{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=5') }}"
+  - name: instance명에 uuid 추가
+    set_fact:
+      db_instance_nm: "{{ db_instance_name }}-{{ uuid }}"
+      was_instance_nm: "{{ was_instance_name }}-{{ uuid }}"
+      web_instance_nm: "{{ web_instance_name }}-{{ uuid }}"
+
+  - name: DB 가상머신 생성 ({{ db_instance_nm }})
+    cs_instance:
+      api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+      api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+      api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+      zone: "{{ lookup('env', 'MOLD_ZONE_NAME') }}"
+      name: "{{ db_instance_nm }}"
+      template: "{{ instance_temp }}"
+      service_offering: "{{ instance_computeoffer }}"
+      ssh_key: "{{ lookup('env', 'MOLD_SSH_KEYPAIR') }}"
+      user_data: |
+          #cloud-config
+          disable_root: false
+          ssh_pwauth: true
+      networks: "{{ lookup('env', 'AC_NETWORK_NAME') }}"
+    register: db_vm
+
+  # - name: 생성한 가상머신이 부팅이 완료될 때까지 대기
+  #   wait_for_connection:
+  #     delay: 20
+  #     timeout: 300
+
+  - name: 배포 가상머신 ip 정보 수집
+    debug:
+      msg: "{{ db_vm.default_ip }}"
+
+  - name: 배포 가상머신 인메모리 inventory에 등록
+    add_host:
+      hostname: "{{ db_vm.default_ip }}"
+      groups:
+        - db_deployVmIp
+
+  - name: WAS 가상머신 생성 ({{ was_instance_nm }})
+    cs_instance:
+      api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+      api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+      api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+      zone: "{{ lookup('env', 'MOLD_ZONE_NAME') }}"
+      name: "{{ was_instance_nm }}"
+      template: "{{ instance_temp }}"
+      service_offering: "{{ instance_computeoffer }}"
+      ssh_key: "{{ lookup('env', 'MOLD_SSH_KEYPAIR') }}"
+      user_data: |
+          #cloud-config
+          disable_root: false
+          ssh_pwauth: true
+      networks: "{{ lookup('env', 'AC_NETWORK_NAME') }}"
+    register: was_vm
+
+  # - name: 생성한 가상머신이 부팅이 완료될 때까지 대기
+  #   wait_for_connection:
+  #     delay: 20
+  #     timeout: 300
+
+  - name: 배포 가상머신 ip 정보 수집
+    debug:
+      msg: "{{ was_vm.default_ip }}"
+
+  - name: 배포 가상머신 인메모리 inventory에 등록
+    add_host:
+      hostname: "{{ was_vm.default_ip }}"
+      groups:
+        - was_deployVmIp
+
+  - name: WEB 가상머신 생성 ({{ web_instance_nm }})
+    cs_instance:
+      api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+      api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+      api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+      zone: "{{ lookup('env', 'MOLD_ZONE_NAME') }}"
+      name: "{{ web_instance_nm }}"
+      template: "{{ instance_temp }}"
+      service_offering: "{{ instance_computeoffer }}"
+      ssh_key: "{{ lookup('env', 'MOLD_SSH_KEYPAIR') }}"
+      user_data: |
+          #cloud-config
+          disable_root: false
+          ssh_pwauth: true
+      networks: "{{ lookup('env', 'AC_NETWORK_NAME') }}"
+    register: web_vm
+
+  - name: 배포 가상머신 ip 정보 수집
+    debug:
+      msg: "{{ web_vm.default_ip }}"
+
+  - name: 배포 가상머신 인메모리 inventory에 등록
+    add_host:
+      hostname: "{{ web_vm.default_ip }}"
+      groups:
+        - web_deployVmIp
+
+  - name: 생성한 가상머신이 부팅이 완료될 때까지 대기
+    wait_for_connection:
+      delay: 20
+      timeout: 300
+
+  # Register db server ip in /etc/hosts for context-datasource.xml to was server
+  - name: lineinfile db server ip to /etc/hosts
+    lineinfile:
+      path: /etc/hosts
+      line: "{{ db_vm.default_ip }} db-server"
+    delegate_to: "{{ was_vm.default_ip }}"
+
+  # Register was server ip in /etc/hosts for nginx configuration to web server
+  - name: lineinfile was server ip to /etc/hosts
+    lineinfile:
+      path: /etc/hosts
+      line: "{{ was_vm.default_ip }} was-server"
+    delegate_to: "{{ web_vm.default_ip }}"
+
+  - name: Create Public IP
+    cs_ip_address:
+      api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+      api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+      api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+      zone: "{{ lookup('env', 'MOLD_ZONE_NAME') }}"
+      network: "{{ lookup('env', 'AC_NETWORK_NAME') }}"
+    register: ac_public_ip
+
+  - name: Public IP 정보 수집
+    debug:
+      msg: "{{ ac_public_ip.ip_address }}"
+
+  - name: Create a static NAT for "ac_public_ip.ip_address" to "{{ web_instance_nm }}"
+    cs_staticnat:
+      api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+      api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+      api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+      zone: "{{ lookup('env', 'MOLD_ZONE_NAME') }}"
+      ip_address: "{{ ac_public_ip.ip_address }}"
+      vm: "{{ web_instance_nm }}"
+    delegate_to: localhost
+
+  - name: Allow port for public ip
+    cs_firewall:
+      api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+      api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+      api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+      zone: "{{ lookup('env', 'MOLD_ZONE_NAME') }}"
+      ip_address: "{{ ac_public_ip.ip_address }}"
+      start_port: "{{ item.port }}"
+      end_port: "{{ item.port }}"
+      protocol: "{{ item.protocol }}"
+    with_items:
+        - {port: 8080, protocol: tcp}
+        - {port: 22, protocol: tcp}
+    delegate_to: localhost
+
+  #=============================================================
+
+  ### 상태체크/삭제 템플릿 생성 및 스케줄러 생성 ###
+  - name: AWX 초기 관리자 패스워드 추출
+    shell: kubectl get -n awx secret awx-admin-password -o jsonpath="{.data.password}" | base64 --decode
+    register: admin_password
+    delegate_to: "{{ lookup('env', 'AC_NETWORK_ADDRESS') }}"
+
+  - name: Create eGovFrame state check playbook
+    awx.awx.job_template:
+      name: 전자정부프레임워크 웹서비스 - 상태체크 - {{ uuid }}
+      description: 전자정부프레임워크 웹서비스의 서비스 상태를 체크합니다.
+      job_type: "run"
+      inventory: Genie Inventory
+      project: Genie Git Project
+      playbook: eGovFrame/eGov_check.yml
+      credentials:
+        - "Automation Controller Credential"
+      state: "present"
+      controller_host: "http://{{ genie_ip }}:80"
+      controller_username: admin
+      controller_password: "{{ admin_password.stdout }}"
+      extra_vars: 
+        db_instance_nm: "{{ db_instance_nm }}"
+        was_instance_nm: "{{ was_instance_nm }}"
+        web_instance_nm: "{{ web_instance_nm }}"
+        uuid: "{{ uuid }}"
+    delegate_to: "{{ lookup('env', 'AC_NETWORK_ADDRESS') }}"
+
+  - name: Create eGovFrame delete playbook
+    awx.awx.job_template:
+      name: 전자정부프레임워크 웹서비스 - 삭제 - {{ uuid }}
+      description: 전자정부프레임워크 웹서비스를 삭제합니다.
+      job_type: "run"
+      inventory: Genie Inventory
+      project: Genie Git Project
+      playbook: eGovFrame/eGov_destroy.yml
+      credentials:
+        - "Automation Controller Credential"
+      state: "present"
+      controller_host: "http://{{ genie_ip }}:80"
+      controller_username: admin
+      controller_password: "{{ admin_password.stdout }}"
+      extra_vars: 
+        db_instance_nm: "{{ db_instance_nm }}"
+        was_instance_nm: "{{ was_instance_nm }}"
+        web_instance_nm: "{{ web_instance_nm }}"
+        uuid: "{{ uuid }}"
+    delegate_to: "{{ lookup('env', 'AC_NETWORK_ADDRESS') }}"
+
+  # - name: 상태체크 job 실행
+  #   awx.awx.job_launch:
+  #     job_template: eGov_check
+  #     controller_host: "http://{{ genie_ip }}:80"
+  #     controller_username: admin
+  #     controller_password: "{{ admin_password.stdout }}"
+
+  - name: Genie job 스케줄러 생성
+    awx.awx.schedule:
+      name: 전자정부프레임워크 웹서비스 - 상태체크 - {{ uuid }}
+      state: present
+      unified_job_template: 전자정부프레임워크 웹서비스 - 상태체크 - {{ uuid }}
+      rrule: "DTSTART;TZID=Asia/Seoul:20220101T120000 RRULE:FREQ=MINUTELY;INTERVAL=1"
+      controller_host: "http://{{ genie_ip }}:80"
+      controller_username: admin
+      controller_password: "{{ admin_password.stdout }}"
+    delegate_to: "{{ lookup('env', 'AC_NETWORK_ADDRESS') }}"
+
+#=============================================================
+
+### Deploy DB Server ###
+- name: Deploy DB Server
+  hosts: db_deployVmIp
+  gather_facts: no
+  vars:
+    db_port: "3306"
+    db_protocol: "tcp"
+
+    # MySQL Settings
+    mysql_root_password: Ablecloud1!
+    mysql_db: cloud
+  tasks:
+
+    # Install MySQL
+    - name: Install MySQL Packages
+      yum: name={{ item }} update_cache=yes state=latest
+      loop: [ 'mysql-server', 'php-mysqlnd', 'python3-PyMySQL' ]
+
+    - name: Start mysqld service
+      systemd: name=mysqld state=started enabled=yes
+        
+    - name: Set MySQL root Password
+      community.mysql.mysql_user:
+        name: root
+        password: "{{ mysql_root_password }}"
+        login_user: root
+        login_password: ""
+        state: present
+
+    - name: Set MySQL root Grants
+      community.mysql.mysql_user:
+        name: root
+        password: "{{ mysql_root_password }}"
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
+        host: "{{ item }}"
+        priv: "*.*:ALL,GRANT"
+        state: present
+      with_items:
+        - localhost
+        - "%"
+
+    - name: Create database
+      community.mysql.mysql_db:
+        name: "{{ mysql_db }}"
+        state: present
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
+
+    - name: Download sql file
+      get_url:
+        url: "https://images.ablecloud.io/genie/eGovFrame/db.sql"
+        dest: /tmp/
+
+    - name: Restore database
+      community.mysql.mysql_db:
+        name: "{{ mysql_db }}"
+        state: import
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
+        target: /tmp/db.sql
+
+    - name: Allow port
+      ansible.posix.firewalld:
+        port: "{{ db_port }}/{{ db_protocol }}"
+        permanent: yes
+        state: enabled
+
+    - name: Start firewalld service
+      systemd: name=firewalld state=restarted
+
+
+### Deploy WAS Server ##
+- name: Deploy WAS Server
+  hosts: was_deployVmIp
+  gather_facts: no
+  vars:
+    tomcat_port: "8080"
+    tomcat_protocol: "tcp"
+
+    # Register db server ip in /etc/hosts for context-datasource.xml
+    # db_instance_nm: "{{ db_instance_name }}-{{ uuid }}"
+  tasks:
+  
+  # Install Tomcat
+  - name: Install Java 8
+    yum:
+      name: java-1.8.0-openjdk
+      state: present
+
+  - name: Download and Unarchive Tomcat
+    ansible.builtin.unarchive:
+      # src: "https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.64/bin/apache-tomcat-9.0.64.tar.gz"
+      src: "https://images.ablecloud.io/genie/eGovFrame/apache-tomcat-9.0.65.tar.gz"
+      dest: /usr/local
+      remote_src: yes
+      # extra_opts: "--strip-components=1"
+      # creates: /usr/local/bin
+
+  - name: Download Tomcat service file
+    get_url:
+      url: "https://images.ablecloud.io/genie/eGovFrame/tomcat.service"
+      dest: "/etc/systemd/system/"
+    
+  - name: Start tomcat service
+    systemd: name=tomcat state=restarted enabled=yes
+
+  - name: Delete ROOT Directory
+    command: rm -rf /usr/local/apache-tomcat-9.0.65/webapps/ROOT
+  #     ansible.builtin.file:
+  #       path: "/usr/local/apache-tomcat-9.0.65/webapps/ROOT"
+  #       state: absent
+
+  - name: Download ROOT.war
+    get_url:
+      url: "https://images.ablecloud.io/genie/eGovFrame/ROOT.war"
+      dest: "/usr/local/apache-tomcat-9.0.65/webapps/"
+
+  # - name: 배포한 DB 가상머신 정보 수집 ({{ db_instance_nm }})
+  #   cs_instance_info:
+  #     api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+  #     api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+  #     api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+  #     name: "{{ db_instance_nm }}"
+  #   delegate_to: localhost
+  #   register: db_vm
+
+  # - name: 배포 가상머신 ip 정보 수집
+  #   debug:
+  #     msg: "{{ db_vm.instances[0].nic[0].ipaddress }}"
+
+  # - name: lineinfile to /etc/hosts
+  #   lineinfile:
+  #     path: /etc/hosts
+  #     line: "{{ db_vm.instances[0].nic[0].ipaddress }} db-server"
+
+  # - name: Replace between the expressions
+  #   ansible.builtin.replace:
+  #     path: /usr/local/apache-tomcat-9.0.65/webapps/ROOT/src/main/resources/egovframework/spring/context-datasource.xml
+  #     after: "{{ vm.instances[0].nic[0].ipaddress }}"
+  #     before: "dbserver"
+
+  - name: Start tomcat service
+    systemd: name=tomcat state=restarted
+
+  - name: Allow port
+    ansible.posix.firewalld:
+      port: "{{ tomcat_port }}/{{ tomcat_protocol }}"
+      permanent: yes
+      state: enabled
+
+  - name: Start firewalld service
+    systemd: name=firewalld state=restarted
+
+
+### Deploy Web Server ###
+- name: Deploy Web Server
+  hosts: web_deployVmIp
+  vars:
+    nginx_port: "8080"
+    nginx_protocol: "tcp"
+
+    # Register was server ip in /etc/hosts for nginx configuration
+    # was_instance_nm: "{{ was_instance_name }}-{{ uuid }}"
+    
+  gather_facts: no
+  tasks:
+
+  # Install nginx
+  - name: Install nginx
+    ansible.builtin.package:
+      name: nginx
+      state: present
+
+  - name: Download nginx-was conf file
+    get_url:
+      url: "https://images.ablecloud.io/genie/eGovFrame/nginx-was.conf"
+      dest: "/etc/nginx/conf.d/"
+  
+  # - name: 배포한 가상머신 정보 수집("{{ was_instance_nm }}")
+  #   cs_instance_info:
+  #     api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+  #     api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+  #     api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+  #     name: "{{ was_instance_nm }}"
+  #   delegate_to: localhost
+  #   register: was_vm
+
+  # - name: 배포 가상머신 ip 정보 수집
+  #   debug:
+  #     msg: "{{ was_vm.instances[0].nic[0].ipaddress }}"
+
+  # - name: lineinfile to /etc/hosts
+  #   lineinfile:
+  #     path: /etc/hosts
+  #     line: "{{ was_vm.instances[0].nic[0].ipaddress }} was-server"
+
+  - name: Set httpd_can_network_connect flag on
+    ansible.posix.seboolean:
+      name: httpd_can_network_connect
+      state: yes
+      persistent: yes
+
+  - name: Start nginx service
+    systemd: name=nginx state=restarted
+
+  # css, images file download
+  - name: Download css file
+    get_url:
+      url: "https://images.ablecloud.io/genie/eGovFrame/css.zip"
+      dest: "/tmp/css.zip"
+  - name: Extract css archive
+    ansible.builtin.unarchive:
+      src: "/tmp/css.zip"
+      dest: /usr/share/nginx/html/
+      remote_src: yes
+
+  - name: Download images file
+    get_url:
+      url: "https://images.ablecloud.io/genie/eGovFrame/images.zip"
+      dest: "/tmp/images.zip"
+  - name: Extract images archive
+    ansible.builtin.unarchive:
+      src: "/tmp/images.zip"
+      dest: /usr/share/nginx/html/
+      remote_src: yes
+
+  - name: Allow port
+    ansible.posix.firewalld:
+      port: "{{ nginx_port }}/{{ nginx_protocol }}"
+      permanent: yes
+      state: enabled
+
+  - name: Start firewalld service
+    systemd: name=firewalld state=restarted

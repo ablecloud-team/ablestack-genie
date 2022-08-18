@@ -1,0 +1,304 @@
+---
+### Deploy VirtualMachine ###
+- name: Genie를 활용한 Wordpress 배포
+  hosts: localhost
+  gather_facts: no
+  vars:
+    base_path: "genie"
+    genie_ip: "localhost"
+  tasks:
+
+  - name: uuid 생성
+    set_fact:
+      uuid: "{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=5') }}"
+  - name: instance명에 uuid 추가
+    set_fact:
+      instance_nm: "{{ instance_name }}-{{ uuid }}"
+
+  - name: 가상머신 생성 ({{ instance_nm }})
+    cs_instance:
+      api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+      api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+      api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+      zone: "{{ lookup('env', 'MOLD_ZONE_NAME') }}"
+      name: "{{ instance_nm }}"
+      template: "{{ instance_temp }}"
+      service_offering: "{{ instance_computeoffer }}"
+      ssh_key: "{{ lookup('env', 'MOLD_SSH_KEYPAIR') }}"
+      user_data: |
+        #cloud-config
+        disable_root: false
+        ssh_pwauth: true
+      networks: "{{ lookup('env', 'AC_NETWORK_NAME') }}"
+    register: vm
+
+  - name: 생성한 가상머신이 부팅이 완료될 때까지 대기
+    wait_for_connection:
+      delay: 20
+      timeout: 300
+
+  - name: 배포 가상머신 ip 정보 수집
+    debug:
+      msg: "{{ vm.default_ip }}"
+
+  - name: 배포 가상머신 인메모리 inventory에 등록
+    add_host:
+      hostname: "{{ vm.default_ip }}"
+      groups:
+        - deployVmIp
+
+  - name: Create Public IP
+    cs_ip_address:
+      api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+      api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+      api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+      zone: "{{ lookup('env', 'MOLD_ZONE_NAME') }}"
+      network: "{{ lookup('env', 'AC_NETWORK_NAME') }}"
+    register: ac_public_ip
+
+  - name: Public IP 정보 수집
+    debug:
+      msg: "{{ ac_public_ip.ip_address }}"
+      
+  - name: Create a static NAT for "{{ ac_public_ip.ip_address }}" to "{{ instance_nm }}"
+    cs_staticnat:
+      api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+      api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+      api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+      zone: "{{ lookup('env', 'MOLD_ZONE_NAME') }}"
+      ip_address: "{{ ac_public_ip.ip_address }}"
+      vm: "{{ instance_nm }}"
+
+  - name: Allow port for public ip
+    cs_firewall:
+      api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+      api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+      api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+      zone: "{{ lookup('env', 'MOLD_ZONE_NAME') }}"
+      ip_address: "{{ ac_public_ip.ip_address }}"
+      start_port: "{{ item.port }}"
+      end_port: "{{ item.port }}"
+      protocol: "{{ item.protocol }}"
+    with_items:
+        - {port: 80, protocol: tcp}
+        - {port: 22, protocol: tcp}
+
+  #=============================================================
+
+  - name: AWX 초기 관리자 패스워드 추출
+    shell: kubectl get -n awx secret awx-admin-password -o jsonpath="{.data.password}" | base64 --decode
+    register: admin_password
+    delegate_to: "{{ lookup('env', 'AC_NETWORK_ADDRESS') }}"
+
+  - name: Create wordpress state check playbook
+    awx.awx.job_template:
+      name: 워드프레스 - 상태체크 - {{ uuid }}
+      description: 워드프레스의 서비스 상태를 체크합니다.
+      job_type: "run"
+      inventory: Genie Inventory
+      project: Genie Git Project
+      playbook: wordpress/wordpress_check.yml
+      credentials:
+        - "Automation Controller Credential"
+      state: "present"
+      controller_host: "http://{{ genie_ip }}:80"
+      controller_username: admin
+      controller_password: "{{ admin_password.stdout }}"
+      extra_vars: 
+        instance_nm: "{{ instance_nm }}"
+        uuid: "{{ uuid }}"
+    delegate_to: "{{ lookup('env', 'AC_NETWORK_ADDRESS') }}"
+
+  - name: Create wordpress delete playbook
+    awx.awx.job_template:
+      name: 워드프레스 - 삭제 - {{ uuid }}
+      description: 워드프레스를 삭제합니다.
+      job_type: "run"
+      inventory: Genie Inventory
+      project: Genie Git Project
+      playbook: wordpress/wordpress_destroy.yml
+      credentials:
+        - "Automation Controller Credential"
+      state: "present"
+      controller_host: "http://{{ genie_ip }}:80"
+      controller_username: admin
+      controller_password: "{{ admin_password.stdout }}"
+      extra_vars: 
+        instance_nm: "{{ instance_nm }}"
+        uuid: "{{ uuid }}"
+    delegate_to: "{{ lookup('env', 'AC_NETWORK_ADDRESS') }}"
+    
+  - name: Genie job 스케줄러 생성
+    awx.awx.schedule:
+      name: 워드프레스 - 상태체크 - {{ uuid }}
+      state: present
+      unified_job_template: 워드프레스 - 상태체크 - {{ uuid }}
+      rrule: "DTSTART;TZID=Asia/Seoul:20220101T120000 RRULE:FREQ=MINUTELY;INTERVAL=1"
+      controller_host: "http://{{ genie_ip }}:80"
+      controller_username: admin
+      controller_password: "{{ admin_password.stdout }}"
+    delegate_to: "{{ lookup('env', 'AC_NETWORK_ADDRESS') }}"
+
+#=============================================================
+
+### Install Wordpress ###
+- name: Deploy Wordpress
+  hosts: deployVmIp
+  gather_facts: no
+  vars:
+    - ansible_user: root
+    - ansible_ssh_pass: Ablecloud1!
+
+    #PHP Settings
+    - php_modules:
+      - php
+      - php-curl
+      - php-gd
+      - php-mbstring
+      - php-xml
+      - php-xmlrpc
+      - php-soap
+      - php-intl
+      - php-zip
+
+    #MySQL Settings
+    - mysql_root_password: Ablecloud1!
+    - mysql_db: wpdb
+    - mysql_user: wpuser
+    - mysql_password: Ablecloud1!
+
+    #HTTP Settings
+    - http_host: html
+    - http_conf: wordpress
+    - http_port: 80
+
+  tasks:
+
+  - name: Install HTTP Packages
+    yum: name=httpd update_cache=yes state=latest
+
+  - name: Start httpd service
+    systemd: name=httpd state=started enabled=yes
+
+  - name: Create Apache Document Root
+    file:
+      path: "/var/www/{{ http_host }}"
+      state: directory
+      owner: "apache"
+      group: "apache"
+      mode: "0755"
+
+  # ansible control에 httpd설치 필요
+  - name: Set up Apache VirtualHost
+    template:
+      src: "/home/runner/httpd.conf"
+      dest: "/etc/httpd/conf.d/{{ http_conf }}"
+      owner: root
+      group: root
+      mode: u=rw,g=r,o=r
+
+  - rpm_key:
+      state: present
+      key: https://rpms.remirepo.net/RPM-GPG-KEY-remi2018
+
+  - name: Install PHP Remi Repository
+    yum:
+      name: "http://rpms.remirepo.net/enterprise/remi-release-8.5.rpm"
+      state: present
+
+  - name: Enable PHP Remi Repository
+    command: dnf module reset php -y
+    command: dnf module enable php:remi-7.4 -y
+
+  - name: Install PHP Extensions
+    yum: name={{ item }} update_cache=yes state=latest
+    loop: "{{ php_modules }}"
+
+  # MySQL Configuration
+  #sudo yum install -y https://dev.mysql.com/get/mysql80-community-release-el8-1.noarch.rpm
+
+  - name: Install MySQL Packages
+    yum: name={{ item }} update_cache=yes state=latest
+    loop: [ 'mysql-server', 'php-mysqlnd', 'python3-PyMySQL' ]
+
+  - name: Start mysqld service
+    systemd: name=mysqld state=started enabled=yes
+
+  - name: Set MySQL root Password
+    community.mysql.mysql_user:
+      name: root
+      password: "{{ mysql_root_password }}"
+      login_host: localhost
+      login_user: root
+      login_password: ""
+      state: present
+  - name: Creates database for WordPress
+    community.mysql.mysql_db:
+      name: "{{ mysql_db }}"
+      state: present
+      login_user: root
+      login_password: "{{ mysql_root_password }}"
+
+  - name: Create MySQL user for WordPress
+    community.mysql.mysql_user:
+      name: "{{ mysql_user }}"
+      password: "{{ mysql_password }}"
+      priv: "{{ mysql_db }}.*:ALL"
+      state: present
+      login_user: root
+      login_password: "{{ mysql_root_password }}"
+
+  # WordPress Configuration
+  - name: Download and unpack latest WordPress
+    unarchive:
+      # src: https://wordpress.org/latest.tar.gz
+      src: https://images.ablecloud.io/genie/wordpress/wordpress-6.0.1.tar.gz
+      dest: "/var/www/{{ http_host }}"
+      remote_src: yes
+      creates: "/var/www/{{ http_host }}/wordpress"
+
+  - name: Set ownership
+    file:
+      path: "/var/www/{{ http_host }}"
+      state: directory
+      recurse: yes
+      owner: apache
+      group: apache
+
+  - name: Set permissions for directories
+    shell: "/usr/bin/find /var/www/{{ http_host }}/wordpress/ -type d -exec chmod 750 {} \\;"
+
+  - name: Set permissions for files
+    shell: "/usr/bin/find /var/www/{{ http_host }}/wordpress/ -type f -exec chmod 640 {} \\;"
+
+  - name: Copy sample config file
+    command: mv /var/www/{{ http_host }}/wordpress/wp-config-sample.php /var/www/{{ http_host }}/wordpress/wp-config.php creates=/var/www/{{ http_host }}/wordpress/wp-config.php
+    become: yes
+
+  - name: Update WordPress config file
+    lineinfile:
+      path: "/var/www/{{ http_host }}/wordpress/wp-config.php"
+      regexp: "{{item.regexp}}"
+      line: "{{item.line}}"
+    with_items:
+      - {'regexp': "define\\( 'DB_NAME', '(.)+' \\);", 'line': "define( 'DB_NAME', '{{mysql_db}}' );"}
+      - {'regexp': "define\\( 'DB_USER', '(.)+' \\);", 'line': "define( 'DB_USER', '{{mysql_user}}' );"}
+      - {'regexp': "define\\( 'DB_PASSWORD', '(.)+' \\);", 'line': "define( 'DB_PASSWORD', '{{mysql_password}}' );"}
+
+  - name: Restart httpd service
+    systemd: name=httpd state=restarted
+    become: yes
+
+  # Firewall Configuration
+  - name: Disable SELinux Permanently (Reboot Required)
+    selinux: state=disabled
+
+  - name: Disable SELinux Without Reboot
+    command: /sbin/setenforce 0
+
+  - name: Configure Firewall
+    firewalld: zone=public service=http permanent=yes state=enabled
+
+  - name: Reload Firewall
+    systemd: name=firewalld state=reloaded
+
