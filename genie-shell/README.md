@@ -2,6 +2,8 @@
 - Automation Controller 템플릿을 수동으로 구성하는 방법과 jenkins를 활용하여 구성하는 방법이 존재합니다.
 
 ### Automation Controller 템플릿 구성 준비 (수동)
+- 전제 조건
+  - CentOs8.5-2111로 설치된 VM으로 'install_automation_controller_template.sh' 파일에 명시된 패키지의 설치가 가능한 OS로 환경이 구성되어야 합니다.
 - 템플릿을 구성할 VM의 경로 "$ /genie/" 에 아래의 목록과 같이 설치에 필요한 파일들을 위치합니다. <br>
 - Git 소스 위치: ablestack-genie/genie_shell/automation_controller_template/
 
@@ -34,6 +36,7 @@ $ sh ./install_automation_controller_template.sh
 - 전제 조건
   - 'centos-8-cloudinit-for-genie-ac-original.qcow2' 파일 필요 -> virsh로 vm을 생성할 호스트에 위치해야 합니다. (addr:10.10.1.2)
     - Nas의 images 폴더에 위치해 있으며 CentOs8.5-2111 로 구성되어 'install_automation_controller_template.sh' 파일에 명시된 패키지 설치가 가능한 상태의 템플릿이어야 합니다.
+    - virsh로 vm을 생성할 호스트(addr:10.10.1.2) 의 public key가 등록 되어있어야 합니다.
   - 'centos-8-cloudinit-for-genie-ac.xml' 파일 필요 -> virsh로 vm을 생성할 호스트에 위치해야 합니다. (addr:10.10.1.2)
     - Git 저장소 'ablestack-genie/genie-shell/etc/'에 위치해 있습니다.
 - 실행 방법
