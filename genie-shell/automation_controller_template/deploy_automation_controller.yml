@@ -1,0 +1,325 @@
+---
+- name: Automation Controller 배포
+  hosts: localhost
+  vars:
+    base_path: 'genie'
+    minikube_cpu: '2'
+    minikube_ram: '3g'
+    genie_ip: 'localhost'
+    default_credential_id: '1'
+    default_project_id: '6'
+    default_inventory_id: '1'
+    default_template_id: '7'
+    default_organization: '1'
+  vars_files: 
+    - /genie/ansible_vars_files.json
+  gather_facts: yes
+  tasks:
+    - name: kube config Home 디렉토리 설정
+      shell: ln -s -f /root/.minikube /root/.kube/.minikube
+
+    - name: Minikube 클러스터 시작
+      shell: minikube start --cpus={{ minikube_cpu }} --memory={{ minikube_ram }} --addons=ingress --install-addons=true --driver=docker --force
+      tags:
+         - start minikube
+         
+    - name: Minikube 상태 체크
+      shell: minikube status |awk -F ' ' '/{{item.shell}}/{ print $2 }'
+      register: minikube_host_stauts
+      failed_when: "'Running' not in minikube_host_stauts.stdout_lines"
+      with_items:
+        - { shell: 'host'}
+        - { shell: 'kubelet'}
+        - { shell: 'apiserver'}
+
+    - name: Genie service 등록
+      shell: systemctl enable genie_cluster.service
+
+    - name: 기본 Namespace를 awx로 변경
+      shell: kubectl config set-context --current --namespace=awx
+
+    - name: SSH 키 생성
+      community.crypto.openssh_keypair:
+        path: /root/.ssh/id_rsa
+        force: yes
+
+    - name: 생성된 공개키 Mold SSH 키페어 등록
+      cs_sshkeypair:
+        name: "{{ AC_INSTANCE_NAME }}"
+        public_key: "{{ lookup('file', '/root/.ssh/id_rsa.pub') }}"
+        api_url: "{{ MOLD_API_URL }}"
+        api_key: "{{ MOLD_API_KEY }}"
+        api_secret: "{{ MOLD_SECRET_KEY }}"
+
+    - name: 공개키 추출
+      command: "cat /root/.ssh/id_rsa.pub"
+      register: id_pub
+      run_once: true
+
+    - name: authrized keys에 생성된 공개키 추가
+      lineinfile:
+        dest: /root/.ssh/authorized_keys
+        line: "{{ id_pub.stdout }}"
+
+    - name: Automation Controller Egress 설정 (ICMP)
+      cs_firewall:
+        network: "{{ AC_NETWORK_NAME }}"
+        icmp_code: -1
+        icmp_type: -1
+        type: egress
+        protocol: icmp
+        api_url: "{{ MOLD_API_URL }}"
+        api_key: "{{ MOLD_API_KEY }}"
+        api_secret: "{{ MOLD_SECRET_KEY }}"
+        zone: "{{ MOLD_ZONE_NAME }}"
+        
+    - name: Automation Controller 포트포워딩 설정
+      cs_portforward:
+        ip_address: "{{ AC_PUBLIC_IP }}"
+        vm: "{{ AC_INSTANCE_NAME }}"
+        api_url: "{{ MOLD_API_URL }}"
+        api_key: "{{ MOLD_API_KEY }}"
+        api_secret: "{{ MOLD_SECRET_KEY }}"
+        zone: "{{ MOLD_ZONE_NAME }}"
+        public_port: "{{ item }}"
+        private_port: "{{ item }}"
+      with_items:
+      - 80
+      - 22
+      - 5432
+      - 8001
+
+    - name: Automation Controller 방화벽 설정 (TCP)
+      cs_firewall:
+        ip_address: "{{ AC_PUBLIC_IP }}"
+        cidr: 0.0.0.0/0
+        port: "{{ item }}"
+        protocol: tcp
+        api_url: "{{ MOLD_API_URL }}"
+        api_key: "{{ MOLD_API_KEY }}"
+        api_secret: "{{ MOLD_SECRET_KEY }}"
+        zone: "{{ MOLD_ZONE_NAME }}"
+      with_items:
+      - 80
+      - 22
+      - 5432
+      - 8001
+
+    - name: Genie Dashboard 응답 대기 중
+      shell: curl -o /dev/null -s -w "%{http_code}\n" http://{{ genie_ip }}:80
+      register: genie_return_code
+      until: genie_return_code.stdout == "200"
+      retries: 50
+
+    # Genie Dashboard 접속 가능할 때에 ping check 허용하여 배포 완성 시기를 사용자에게 알림
+    - name: Automation Controller 방화벽 설정 (ICMP)
+      cs_firewall:
+        ip_address: "{{ AC_PUBLIC_IP }}"
+        cidr: 0.0.0.0/0
+        protocol: icmp
+        icmp_code: -1
+        icmp_type: -1
+        api_url: "{{ MOLD_API_URL }}"
+        api_key: "{{ MOLD_API_KEY }}"
+        api_secret: "{{ MOLD_SECRET_KEY }}"
+        zone: "{{ MOLD_ZONE_NAME }}"
+
+##### AWX 셋팅
+    - name: AWX 초기 관리자 패스워드 추출
+      shell: kubectl get -n awx secret awx-admin-password -o jsonpath="{.data.password}" | base64 --decode
+      register: admin_password
+
+    - name: Job settings - 전역변수 설정
+      awx.awx.settings:
+        settings:
+          AWX_TASK_ENV:
+            MOLD_API_URL: "{{ MOLD_API_URL }}"
+            MOLD_API_KEY: "{{ MOLD_API_KEY }}"
+            MOLD_SECRET_KEY: "{{ MOLD_SECRET_KEY }}"
+            MOLD_ZONE_ID: "{{ MOLD_ZONE_ID }}"
+            MOLD_ZONE_NAME: "{{ MOLD_ZONE_NAME }}"
+            MOLD_SSH_KEYPAIR: "{{ AC_INSTANCE_NAME }}"
+            AC_ID: "{{ AC_ID }}"
+            AC_INSTANCE_NAME: "{{ AC_INSTANCE_NAME }}"
+            AC_NETWORK_NAME: "{{ AC_NETWORK_NAME }}"
+            AC_NETWORK_ADDRESS: "{{ ansible_default_ipv4.address }}"
+            MOLD_DEFAULT_URL: "{{ MOLD_DEFAULT_URL }}"
+            MOLD_DEFAULT_PORT: "{{ MOLD_DEFAULT_PORT }}"
+        controller_host: "http://{{ genie_ip }}:80"
+        controller_username: admin
+        controller_password: "{{ admin_password.stdout }}"
+
+    - name: 디폴트 job 템플릿 삭제
+      uri:
+        url: http://{{ genie_ip }}:80/api/v2/job_templates/{{ default_template_id }}/
+        method: DELETE
+        body_format: json
+        user: admin
+        password: "{{ admin_password.stdout }}"
+        force_basic_auth: yes
+        body:
+          {
+          }
+        status_code: 204
+
+    - name: 디폴트 인증정보 이름 변경
+      uri:
+        url: http://{{ genie_ip }}:80/api/v2/credentials/{{ default_credential_id }}/
+        method: PATCH
+        body_format: json
+        user: admin
+        password: "{{ admin_password.stdout }}"
+        force_basic_auth: yes
+        body:
+          {
+            "name": "Default Credential",
+            "description": "Genie EE에 SSH 접근을 위한 인증 정보입니다."
+          }
+        status_code: 200
+        
+    - name: 디폴트 프로젝트 삭제
+      uri:
+        url: http://{{ genie_ip }}:80/api/v2/projects/{{ default_project_id }}/
+        method: DELETE
+        body_format: json
+        user: admin
+        password: "{{ admin_password.stdout }}"
+        force_basic_auth: yes
+        status_code: 204
+      ignore_errors: yes
+
+    - name: 디폴트 인벤토리를 Genie Inventory로 이름 변경
+      uri:
+        url: http://{{ genie_ip }}:80/api/v2/inventories/{{ default_inventory_id }}/
+        method: PATCH
+        body_format: json
+        user: admin
+        password: "{{ admin_password.stdout }}"
+        force_basic_auth: yes
+        body:
+          {
+            "name": "Genie Inventory",
+            "organization": "{{ default_organization }}",
+            "description": "Genie 자동화 서비스에서 사용하는 인벤토리 정보입니다."
+          }
+        status_code: 200
+
+    - name: Cleanup Job Schedule 설정 변경
+      awx.awx.schedule:
+        name: Cleanup Job Schedule
+        state: present
+        unified_job_template: Cleanup Job Details
+        rrule: "DTSTART;TZID=Asia/Seoul:20220101T120000 RRULE:FREQ=DAILY;INTERVAL=1"
+        extra_data:
+          {
+            "days": "7"
+          }
+        controller_host: "http://{{ genie_ip }}:80"
+        controller_username: admin
+        controller_password: "{{ admin_password.stdout }}"
+
+    - name: Automation Controller Credential 생성
+      awx.awx.credential:
+        name: Automation Controller Credential
+        description: 오토메이션 컨트롤러에 SSH 접속을 위한 인증 정보입니다.
+        organization: Default
+        credential_type: Machine
+        state: present
+        inputs:
+          username: root
+          ssh_key_data: "{{ lookup('file', '/root/.ssh/id_rsa') }}"
+        controller_host: "http://{{ genie_ip }}:80"
+        controller_username: admin
+        controller_password: "{{ admin_password.stdout }}" 
+
+    - name: genie_inventory(디폴트 인벤토리)에 호스트(automation controller) 추가
+      uri:
+        url: http://{{ genie_ip }}:80/api/v2/inventories/{{ default_inventory_id }}/hosts/
+        method: POST
+        body_format: json
+        user: admin
+        password: "{{ admin_password.stdout }}"
+        force_basic_auth: yes
+        body:
+          {
+            "name": "{{ ansible_default_ipv4.address }}",
+            "description": "오토메이션 컨트롤러의 IP입니다."
+          }
+        status_code: 201
+
+    - name: genie_inventory(디폴트 인벤토리)에 그룹(genie_vm) 추가
+      uri:
+        url: http://{{ genie_ip }}:80/api/v2/inventories/{{ default_inventory_id }}/groups/
+        method: POST
+        body_format: json
+        user: admin
+        password: "{{ admin_password.stdout }}"
+        force_basic_auth: yes
+        body:
+          {
+            "name": "genie_vm",
+          }
+        status_code: 201
+      register: group
+
+    - name: genie_inventory(디폴트 인벤토리)에 automation controller 호스트를 genie_vm 그룹에 추가
+      uri:
+        url: http://{{ genie_ip }}:80/api/v2/groups/{{ group.json.id }}/hosts/
+        method: POST
+        body_format: json
+        user: admin
+        password: "{{ admin_password.stdout }}"
+        force_basic_auth: yes
+        body:
+          {
+            "name": "{{ ansible_default_ipv4.address }}",
+            "inventory": "{{ default_inventory_id }}"
+          }
+        status_code: 204
+
+    # - name: Genie 원격 저장소 프로젝트 생성
+    #   uri:
+    #     url: http://{{ genie_ip }}:80/api/v2/projects/
+    #     method: POST
+    #     body_format: json
+    #     user: admin
+    #     password: "{{ admin_password.stdout }}"
+    #     force_basic_auth: yes
+    #     body:
+    #       {
+    #         "name": "remote_archive_project",
+    #         "scm_type": "archive",
+    #         "scm_url": "http://{{ MOLD_DEFAULT_URL }}:7000/nextcloud.zip",
+    #         "scm_delete_on_update": "true"
+    #       }
+    #     status_code: 201
+
+    - name: Genie Git 프로젝트 생성
+      awx.awx.project:
+        name: Genie Git Project
+        description: ABLECLOUD에서 제공하는 자동화 서비스 플레이북의 Git 저장소 입니다.
+        default_environment: AWX EE (genie_latest)
+        organization: "Default"
+        scm_type: git
+        scm_url: https://github.com/sjyu1/playbook.git
+        scm_branch: main
+        scm_update_on_launch: no
+        state: present
+        controller_host: "http://{{ genie_ip }}:80"
+        controller_username: admin
+        controller_password: "{{ admin_password.stdout }}"
+
+    - name: Genie 템플릿 리스트 불러오는 템플릿 생성
+      awx.awx.job_template:
+        name: Genie 템플릿 리스트 불러오기 및 업데이트
+        description: Genie 서비스를 이용하기 위해 ABLESTACK에서 제공하는 자동화 템플릿을 불러옵니다. 다시 실행하게 되면 템플릿에 변경사항이 있을 경우 업데이트됩니다.
+        job_type: "run"
+        inventory: Genie Inventory
+        project: Genie Git Project
+        playbook: template/template_deploy.yml
+        credentials:
+          - "Automation Controller Credential"
+        state: "present"
+        controller_host: "http://{{ genie_ip }}:80"
+        controller_username: admin
+        controller_password: "{{ admin_password.stdout }}"

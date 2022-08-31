@@ -1,0 +1,284 @@
+---
+- name: Automation Contorller 템플릿 구성
+  hosts: localhost
+  vars:
+    base_path: genie
+    
+    minikube_cpu: '4'
+    minikube_ram: '6g'
+    minikube_version: 'v1.25.2'
+    kubectl_version: 'v1.23.5'
+    # awx_operator_version: '0.17.0'
+    awx_operator_version: '0.20.2'
+
+    conntrack_version: '1.4.4-10.el8'
+    make_version: '1:4.2.1-11.el8'
+    wget_version: '1.19.5-10.el8'
+    git_version: '2.31.1-2.el8'
+    cloud_init_version: '21.1-14.el8.noarch'
+    docker_ce_verion: '3:20.10.14-3.el8'
+    docker_cli_verion: '1:20.10.14-3.el8'
+    docker_containerd_io_verion: '1.5.11-3.1.el8'
+
+    # genie_dashboard_port: '80'
+    # genie_db_postgres_port: '5432'
+    kubernetes_dashboard_port: '8001'
+
+    genie_admin: 'genie'    # 초기에 생성되는 Genie 대시보드 계정입니다.
+    genie_pass: 'password'  # 초기에 생성되는 Genie 대시보드 계정의 패스워드 입니다.
+    awx_image_path: 'ablecloudteam/genie-awx'  # 커스터 마이징된 AWX 이미지 경로입니다.
+    awx_image_version: 'latest'  # 커스터 마이징된 AWX 이미지 이름입니다.
+    ee_image_name: 'AWX EE (genie_latest)'  # 커스터 마이징된 AWX EE 이미지 이름입니다.
+    ee_image_path: 'ablecloudteam/genie-awx-ee'  # 커스터 마이징된 AWX EE 이미지 경로입니다.
+    genie_ip: 'localhost' # Genie 대시보드 URL입니다.
+  gather_facts: no
+  tasks:
+    - name: 패키지 설치
+      dnf:
+        name:
+          - conntrack-tools-{{ conntrack_version }}
+          - make-{{ make_version }}
+          - wget-{{ wget_version }}
+          - git-{{ git_version }}
+          - cloud-init-{{ cloud_init_version }}
+        state: present
+
+    - name: Docker 설치 1/4 # pod 삭제
+      dnf:
+        name:
+          - podman 
+          - buildah
+        state: absent
+
+    - name: Docker 설치 2/4 # 저장소 추가
+      shell: dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
+
+    - name: Docker 설치 3/4 # Docker 설치
+      dnf:
+        name:
+          - docker-ce-{{ docker_ce_verion }}
+          - docker-ce-cli-{{ docker_cli_verion }}
+          - containerd.io-{{ docker_containerd_io_verion }}
+        state: present
+
+    - name: Docker 설치 # Docker 서비스 시작
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+        masked: no
+
+    - name: minikube 설치
+      shell: | 
+        curl -LO https://github.com/kubernetes/minikube/releases/download/{{ minikube_version }}/minikube-linux-amd64
+        install minikube-linux-amd64 /usr/local/bin/minikube
+
+    - name: kubectl 설치
+      shell: | 
+        curl -LO "https://dl.k8s.io/release/{{ kubectl_version }}/bin/linux/amd64/kubectl"
+        install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
+    - name: Kustomize 설치
+      shell: | 
+        curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash
+        install -o root -g root -m 0755 kustomize /usr/local/bin/kustomize
+
+    - name : awx-operator 폴더 삭제
+      file:
+        path: /{{ base_path }}/awx-operator/
+        state: absent
+
+    - name: awx-operator 설치
+      shell: | 
+        git clone https://github.com/ansible/awx-operator.git /{{ base_path }}/awx-operator/
+        cd /{{ base_path }}/awx-operator
+        git checkout {{ awx_operator_version }}
+        
+
+    - name: Firewall Rules 설정
+      shell: | 
+        firewall-cmd --permanent --zone=public --add-port=80/tcp          # genie dashboard
+        firewall-cmd --permanent --zone=public --add-port=5432/tcp        # postgres
+        firewall-cmd --permanent --zone=public --add-port={{ kubernetes_dashboard_port }}/tcp     # kubernetes 
+        firewall-cmd --permanent --zone=public --add-service=http
+        firewall-cmd --reload
+
+    - name: sshd 설정 1/2 # 1)패스워드 인증 기능 사용 2)Root 로그인 허용 
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        backrefs: yes
+      with_items:
+        - {regexp: '^#PasswordAuthentication', line: 'PasswordAuthentication yes'}
+        - {regexp: '^PasswordAuthentication', line: 'PasswordAuthentication yes'}
+        - {regexp: '^#PermitRootLogin', line: 'PermitRootLogin yes'}
+        - {regexp: '^PermitRootLogin', line: 'PermitRootLogin yes'}
+
+    - name: sshd 설정 2/2  # sshd 서비스 재시작 
+      systemd:
+        name: sshd
+        state: restarted
+        daemon_reload: yes
+
+    - name: cloud-init sshd 설정 # 1)패스워드 인증 기능 사용 2)Root 로그인 허용 
+      lineinfile:
+        path: /etc/cloud/cloud.cfg
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        backrefs: yes
+      with_items:
+        - { regexp: '^disable_root', line: 'disable_root: false'}
+        - { regexp: '^ssh_pwauth', line: 'ssh_pwauth: true'}
+
+    - name: Minikube 클러스터 시작
+      shell: minikube start --cpus={{ minikube_cpu }} --memory={{ minikube_ram }} --addons=ingress --install-addons=true --driver=docker --force
+
+    - name: Minikube 상태 체크
+      shell: minikube status |awk -F ' ' '/{{item.shell}}/{ print $2 }'
+      register: minikube_host_stauts
+      failed_when: "'Running' not in minikube_host_stauts.stdout_lines"
+      with_items:
+        - { shell: 'host'}
+        - { shell: 'kubelet'}
+        - { shell: 'apiserver'}
+
+    - name: Minikube 설정
+      shell: |
+        alias kubectl="minikube kubectl --"
+        export NAMESPACE=awx
+
+    - name: kube-system 배포 중
+      wait_for:
+        timeout: 15
+        
+    - name: kube_system storage-provisioner 상태 체크
+      shell: minikube kubectl -- get pods -A | awk -F ' ' '/storage-provisioner/{ print $4 }' 
+      register: kubectl_get_pod_storage_provisioner
+      until: kubectl_get_pod_storage_provisioner.stdout == "Running"
+      retries: 15
+
+    - name: kustomization.yml 초기화 
+      shell: rm -f {{base_path}}/awx-operator/kustomization.yml
+
+    - name: kustomization.yml 생성
+      lineinfile:
+        path: /{{base_path}}/awx-operator/kustomization.yml
+        create: yes
+        line: "{{ item.line }}"
+      with_items:
+        - {line: 'apiVersion: kustomize.config.k8s.io/v1beta1'}
+        - {line: 'kind: Kustomization'}
+        - {line: 'resources:'}
+        - {line: '  - github.com/ansible/awx-operator/config/default?ref={{ awx_operator_version }}'}
+        - {line: 'images:'}
+        - {line: '  - name: quay.io/ansible/awx-operator'}
+        - {line: '    newTag: {{ awx_operator_version }}'}
+        - {line: 'namespace: awx'}
+
+    - name: AWX Operator Pod 배포
+      shell: 
+        cmd: kustomize build . | kubectl apply -f -
+        chdir: "/{{ base_path }}/awx-operator/"
+
+    - name: AWX Operator Pod 배포 중
+      wait_for:
+        timeout: 25
+
+    - name: AWX Operator pod 상태 체크
+      shell: kubectl get pods -n awx | awk -F ' ' '/^awx-operator-controller/{ print $2 }' 
+      register: kubectl_get_pod_awx_operator
+      until: kubectl_get_pod_awx_operator.stdout == "2/2"
+      retries: 20
+
+    - name: 기본 Namespace를 awx로 변경
+      shell: kubectl config set-context --current --namespace=awx
+
+    - name: AWX Deployment, Service 배포 준비 1/2
+      lineinfile:
+        path: /{{base_path}}/awx-operator/awx-demo.yml
+        insertafter: "spec:"  #spec 다음 라인에 추가할 옵션을 설정합니다.
+        line: "{{ item.line }}"
+      with_items:
+        - {line: '  ingress_type: none'}
+        - {line: '  projects_persistence: true'}
+        - {line: '      image: {{ ee_image_path }}'}
+        - {line: '    - name: {{ ee_image_name }}'}
+        - {line: '  ee_images:'}
+        - {line: '  image_version: {{ awx_image_version }}'}
+        - {line: '  image: {{ awx_image_path }}'}
+        - {line: '  csrf_cookie_secure: "False"'}        
+        - {line: '  session_cookie_secure: "False"'}
+
+    - name: AWX Deployment, Service 배포 준비 2/2
+      lineinfile:
+        path: /{{base_path}}/awx-operator/awx-demo.yml
+        regexp: "  name: awx-demo"
+        line: "{{ item.line }}"
+      with_items:
+        - {line: '  name: awx'}
+
+    - name: kustomization.yml 생성
+      lineinfile:
+        path: /{{base_path}}/awx-operator/kustomization.yml
+        insertafter: '^resources:'
+        line: "{{ item.line }}"
+      with_items:
+        - {line: '  - awx-demo.yml'} 
+
+    - name: AWX Deployment, Service 배포 시작
+      shell: 
+        cmd: kustomize build . | kubectl apply -f -
+        chdir: "/{{ base_path }}/awx-operator/"
+
+    - name: AWX Deployment, Service 상태 체크
+      wait_for:
+        timeout: 90
+    - shell: kubectl get pods -n awx -l "app.kubernetes.io/managed-by=awx-operator" -o json
+      register: kubectl_get_pod_awx_deployment
+      until: kubectl_get_pod_awx_deployment.stdout | from_json | json_query('items[*].status.phase') | unique == ["Running"]
+      retries: 20
+    - shell: kubectl get svc -n awx -l "app.kubernetes.io/managed-by=awx-operator" -o json
+      register: kubectl_get_pod_awx_service
+      until: kubectl_get_pod_awx_service.stdout | from_json | json_query('items[*].metadata.name') | unique == ["awx-postgres", "awx-service"]
+      retries: 20
+
+    - name: Genie 대시보드 및 DB 포트포워딩 서비스 시작
+      systemd:
+        name: check_port_forward
+        state: restarted
+        enabled: yes
+        masked: no
+
+    - name: 쿠버네티스 대시보드 설치 및 프록시 설정
+      shell: minikube addons enable dashboard
+    - shell: minikube addons list | awk -F '|' '/dashboard/{ print $4 }' 
+      register: minikube_addon_dashboard
+      until: minikube_addon_dashboard.stdout.find('enabled') == 1
+      retries: 10
+    - shell: kubectl proxy --address='0.0.0.0' --disable-filter=true  &> /dev/null &
+    
+    - name: Genie Dashboard 응답 대기 중 (약 2분 소요)
+      shell: curl -o /dev/null -s -w "%{http_code}\n" http://{{ genie_ip }}:80
+      register: genie_return_code
+      until: genie_return_code.stdout == "200"
+      retries: 50
+
+    - name: AWX 초기 관리자 패스워드 추출
+      shell: kubectl get -n awx secret awx-admin-password -o jsonpath="{.data.password}" | base64 --decode
+      register: admin_password
+
+    - name: AWX API를 이용한 유저 생성
+      awx.awx.user:
+        username: "{{ genie_admin }}"
+        password: "{{ genie_pass }}"
+        superuser: yes
+        state: present
+        controller_host: "http://{{ genie_ip }}:80"
+        controller_username: admin
+        controller_password: "{{ admin_password.stdout }}"
+      register: user_genie
+
+    - name: result minikube
+      debug: 
+        msg: "Genie VM 템플릿 배포 완료"
