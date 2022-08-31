@@ -1,0 +1,93 @@
+---
+- name: Genie를 활용한 Wordpress 삭제
+  hosts: localhost
+  gather_facts: no
+  ignore_errors: yes
+  vars:
+    service_group: "Wordpress-{{ uuid }}"
+  tasks:
+
+  ### Delete resource package  ###
+  - name: 서비스 그룹 상태정보 삭제 및 단위별 상태정보 삭제
+    ansible.builtin.command: python2 /home/runner/mold_genie_api.py \
+      -c deleteDeployedResourceGroup \
+      -ap http -ip "{{ lookup('env', 'MOLD_DEFAULT_URL') }}" -p "{{ lookup('env', 'MOLD_DEFAULT_PORT') }}" \
+      -ak "{{ lookup('env', 'MOLD_API_KEY') }}" \
+      -sk "{{ lookup('env', 'MOLD_SECRET_KEY') }}" \
+      -zid "{{ lookup('env', 'MOLD_ZONE_ID') }}" \
+      -n "{{ service_group }}"
+
+  - name: 배포한 가상머신 정보 수집
+    cs_instance_info:
+      api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+      api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+      api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+      name: "{{ instance_nm }}"
+    delegate_to: localhost
+    register: vm
+
+  - name: 배포 가상머신 ip 정보 수집
+    debug:
+      msg: "{{ vm }}"
+
+  - name: Remove a static NAT
+    cs_staticnat:
+      api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+      api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+      api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+      zone: "{{ lookup('env', 'MOLD_ZONE_ID') }}"
+      ip_address: "{{ vm.instances[0].public_ip }}"
+      state: absent
+    delegate_to: localhost
+
+  - name: Disassociate an IP address
+    cs_ip_address:
+      api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+      api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+      api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+      zone: "{{ lookup('env', 'MOLD_ZONE_ID') }}"
+      ip_address: "{{ vm.instances[0].public_ip }}"
+      state: absent
+    delegate_to: localhost
+
+  - name: Destroyed VirtualMachine
+    cs_instance:
+      api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+      api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+      api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+      zone: "{{ lookup('env', 'MOLD_ZONE_ID') }}"
+      name: "{{ instance_nm }}"
+      state: destroyed
+    delegate_to: localhost
+
+- name: 서비스 상태체크 스케줄러 삭제
+  hosts: genie_vm
+  gather_facts: no
+  ignore_errors: yes
+  vars:
+    base_path: "genie"
+    genie_ip: "localhost"
+    uuid: "{{ uuid }}"
+  tasks:
+  
+  - name: AWX 초기 관리자 패스워드 추출
+    shell: kubectl get -n awx secret awx-admin-password -o jsonpath="{.data.password}" | base64 --decode
+    register: admin_password
+
+  - name: Genie job 스케줄러 삭제 - {{ uuid }}
+    awx.awx.schedule:
+      name: 워드프레스 - 상태체크 - {{ uuid }}
+      state: absent
+      unified_job_template: "워드프레스 - 상태체크 - {{ uuid }}"
+      # rrule: "DTSTART;TZID=Asia/Seoul:20220101T120000 RRULE:FREQ=MINUTELY;INTERVAL=1"
+      controller_host: "http://{{ genie_ip }}:80"
+      controller_username: admin
+      controller_password: "{{ admin_password.stdout }}"
+
+  - name: Delete wordpress state check playbook
+    awx.awx.job_template:
+      name: 워드프레스 - 상태체크 - {{ uuid }}
+      state: "absent"
+      controller_host: "http://{{ genie_ip }}:80"
+      controller_username: admin
+      controller_password: "{{ admin_password.stdout }}"

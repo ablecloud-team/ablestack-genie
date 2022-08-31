@@ -1,0 +1,148 @@
+---
+- name: Genie를 활용한 Nextcloud 상태체크
+  hosts: localhost
+  gather_facts: no
+  vars:
+    service_group: "Nextcloud-{{ uuid }}"
+  tasks:
+
+  ### Info VirtualMachine ###
+  - name: 배포한 가상머신 정보 수집
+    cs_instance_info:
+      api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+      api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+      api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+      name: "{{ instance_nm }}"
+    delegate_to: localhost
+    register: vm
+
+  - name: 배포 가상머신 ip 정보 수집
+    debug:
+      msg: "{{ vm.instances[0].nic[0].ipaddress }}"
+
+  ### Save State ###
+  - name: Check group
+    ansible.builtin.command: python2 /home/runner/mold_genie_api.py \
+      -c listAutomationDeployedResource \
+      -ap http -ip "{{ lookup('env', 'MOLD_DEFAULT_URL') }}" -p "{{ lookup('env', 'MOLD_DEFAULT_PORT') }}" \
+      -ak "{{ lookup('env', 'MOLD_API_KEY') }}" \
+      -sk "{{ lookup('env', 'MOLD_SECRET_KEY') }}" \
+      -n "{{ service_group }}"
+    register: list_group
+    
+  - name: debug list_group stdout
+    set_fact:
+      list_jsondata: "{{ list_group.stdout | from_json }}"
+  # - debug:
+  #     var: list_jsondata
+  # - name: group list count
+  #   debug:
+  #     msg: "{{ list_jsondata }}"
+
+  # 그룹등록
+  # access info에 등록되는 데이터 양식
+  # http://IP 주소 <br> 으로 띄어쓰기에 유의하여 등록되야 합니다. 첫번 째 "http://"으로 시작되는 주소를 활용해 하이퍼링크를 생성합니다.
+  - name: Register Group
+    ansible.builtin.command: python2 /home/runner/mold_genie_api.py \
+      -c addDeployedResourceGroup \
+      -ap http -ip "{{ lookup('env', 'MOLD_DEFAULT_URL') }}" -p "{{ lookup('env', 'MOLD_DEFAULT_PORT') }}" \
+      -ak "{{ lookup('env', 'MOLD_API_KEY') }}" \
+      -sk "{{ lookup('env', 'MOLD_SECRET_KEY') }}" \
+      -zid "{{ lookup('env', 'MOLD_ZONE_ID') }}" \
+      -acid "{{ lookup('env', 'AC_ID') }}" \
+      -n "{{ service_group }}" \
+      -d "NextCloud is client-server software for developing and using file hosting services." \
+      -ai "<a href='http://{{ vm.instances[0].public_ip }}/nextcloud' target='_blank'> http://{{ vm.instances[0].public_ip }}/nextcloud</a> <br><br> Initial login id/pw( user/password ) <br> It is Recommended that you change initial password for improved security."
+    when: list_jsondata.listautomationdeployedresourceresponse == {}
+
+  # 그룹조회
+  - name: Check group
+    ansible.builtin.command: python2 /home/runner/mold_genie_api.py \
+      -c listAutomationDeployedResource \
+      -ap http -ip "{{ lookup('env', 'MOLD_DEFAULT_URL') }}" -p "{{ lookup('env', 'MOLD_DEFAULT_PORT') }}" \
+      -ak "{{ lookup('env', 'MOLD_API_KEY') }}" \
+      -sk "{{ lookup('env', 'MOLD_SECRET_KEY') }}" \
+      -n "{{ service_group }}"
+    register: list_group2
+    
+  - name: debug list_group2 stdout
+    set_fact:
+      list2_jsondata: "{{ list_group2.stdout | from_json }}"
+  # - debug:
+  #     var: list2_jsondata
+  # - name: group list2 count
+  #   debug:
+  #     msg: "{{ list2_jsondata }}"
+
+  - name: Delete unit resource
+    ansible.builtin.command: python2 /home/runner/mold_genie_api.py \
+      -c deleteDeployedUnitResource \
+      -ap http -ip "{{ lookup('env', 'MOLD_DEFAULT_URL') }}" -p "{{ lookup('env', 'MOLD_DEFAULT_PORT') }}" \
+      -ak "{{ lookup('env', 'MOLD_API_KEY') }}" \
+      -sk "{{ lookup('env', 'MOLD_SECRET_KEY') }}" \
+      -gid "{{ list2_jsondata.listautomationdeployedresourceresponse.automationdeployedresource[0].id }}"
+
+  - name: ssh
+    ansible.builtin.command: ssh root@{{ vm.instances[0].nic[0].ipaddress }} "systemctl is-active httpd"
+    ignore_errors: yes
+    register: httpd_state_result
+
+  - name: ssh result
+    debug:
+      msg: "{{ httpd_state_result.stdout }}"
+
+  # 서비스 단위별 상태 등록(httpd)
+  - name: Register unit resource
+    ansible.builtin.command: python2 /home/runner/mold_genie_api.py \
+      -c addDeployedUnitResource \
+      -ap http -ip "{{ lookup('env', 'MOLD_DEFAULT_URL') }}" -p "{{ lookup('env', 'MOLD_DEFAULT_PORT') }}" \
+      -ak "{{ lookup('env', 'MOLD_API_KEY') }}" \
+      -sk "{{ lookup('env', 'MOLD_SECRET_KEY') }}" \
+      -gid "{{ list2_jsondata.listautomationdeployedresourceresponse.automationdeployedresource[0].id }}" \
+      -vid "{{ vm.instances[0].id }}" \
+      -un httpd \
+      -s "{{ httpd_state_result.stdout }}"
+
+  - name: ssh
+    ansible.builtin.command: ssh root@{{ vm.instances[0].nic[0].ipaddress }} "systemctl is-active mysqld"
+    ignore_errors: yes
+    register: mysqld_state_result
+
+  - name: ssh result
+    debug:
+      msg: "{{ mysqld_state_result.stdout }}"
+
+  # 서비스 단위별 상태 등록(mysqld)
+  - name: Register unit resource
+    ansible.builtin.command: python2 /home/runner/mold_genie_api.py \
+      -c addDeployedUnitResource \
+      -ap http -ip "{{ lookup('env', 'MOLD_DEFAULT_URL') }}" -p "{{ lookup('env', 'MOLD_DEFAULT_PORT') }}" \
+      -ak "{{ lookup('env', 'MOLD_API_KEY') }}" \
+      -sk "{{ lookup('env', 'MOLD_SECRET_KEY') }}" \
+      -gid "{{ list2_jsondata.listautomationdeployedresourceresponse.automationdeployedresource[0].id }}" \
+      -vid "{{ vm.instances[0].id }}" \
+      -un mysqld \
+      -s "{{ mysqld_state_result.stdout }}"
+
+  # 서비스 그룹 상태 업데이트
+  - name: Update group(active)
+    ansible.builtin.command: python2 /home/runner/mold_genie_api.py \
+      -c updateDeployedResourceGroup \
+      -ap http -ip "{{ lookup('env', 'MOLD_DEFAULT_URL') }}" -p "{{ lookup('env', 'MOLD_DEFAULT_PORT') }}" \
+      -ak "{{ lookup('env', 'MOLD_API_KEY') }}" \
+      -sk "{{ lookup('env', 'MOLD_SECRET_KEY') }}" \
+      -gid "{{ list2_jsondata.listautomationdeployedresourceresponse.automationdeployedresource[0].id }}" \
+      -ai "<a href='http://{{ vm.instances[0].public_ip }}/nextcloud' target='_blank'> http://{{ vm.instances[0].public_ip }}/nextcloud</a> <br><br> Initial login id/pw( user/password ) <br> It is Recommended that you change initial password for improved security." \
+      -s "Active"
+    when: httpd_state_result.stdout == "active" and mysqld_state_result.stdout == "active"
+
+  - name: Update group(inactive)
+    ansible.builtin.command: python2 /home/runner/mold_genie_api.py \
+      -c updateDeployedResourceGroup \
+      -ap http -ip "{{ lookup('env', 'MOLD_DEFAULT_URL') }}" -p "{{ lookup('env', 'MOLD_DEFAULT_PORT') }}" \
+      -ak "{{ lookup('env', 'MOLD_API_KEY') }}" \
+      -sk "{{ lookup('env', 'MOLD_SECRET_KEY') }}" \
+      -gid "{{ list2_jsondata.listautomationdeployedresourceresponse.automationdeployedresource[0].id }}" \
+      -ai "<a href='http://{{ vm.instances[0].public_ip }}/nextcloud' target='_blank'> http://{{ vm.instances[0].public_ip }}/nextcloud</a> <br><br> Initial login id/pw( user/password ) <br> It is Recommended that you change initial password for improved security." \
+      -s "Inactive"
+    when: httpd_state_result.stdout != "active" or mysqld_state_result.stdout != "active"
