@@ -29,7 +29,7 @@
       extra_vars: 
         instance_name: "wordpress-deploy-vm"
         instance_temp: "CentOS-8-cloudinit"
-        instance_computeoffer: "2C-4GB-RBD"
+        instance_computeoffer: "2C-4GB-RBD-HD"
 
   # - name: Create wordpress state check playbook
   #   awx.awx.job_template:
@@ -84,7 +84,7 @@
         # uuid: "{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=5') }}"
         instance_name: "nextcloud-deploy-vm"
         instance_temp: "CentOS-8-cloudinit"
-        instance_computeoffer: "2C-4GB-RBD"
+        instance_computeoffer: "2C-4GB-RBD-HD"
 
   # - name: Create nextcloud state check playbook
   #   awx.awx.job_template:
@@ -137,7 +137,7 @@
         was_instance_name: "was-deploy-vm"
         web_instance_name: "web-deploy-vm"
         instance_temp: "CentOS-8-cloudinit"
-        instance_computeoffer: "2C-4GB-RBD"
+        instance_computeoffer: "2C-4GB-RBD-HD"
 
   # - name: Create eGovFrame state check playbook
   #   awx.awx.job_template:
