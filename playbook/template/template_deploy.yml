@@ -19,7 +19,7 @@
       job_type: "run"
       inventory: Genie Inventory
       project: Genie Git Project
-      playbook: wordpress/wordpress_deploy.yml
+      playbook: playbook/wordpress/wordpress_deploy.yml
       credentials:
         - "Automation Controller Credential"
       state: "present"
@@ -73,7 +73,7 @@
       job_type: "run"
       inventory: Genie Inventory
       project: Genie Git Project
-      playbook: nextcloud/nextcloud_deploy.yml
+      playbook: playbook/nextcloud/nextcloud_deploy.yml
       credentials:
         - "Automation Controller Credential"
       state: "present"
@@ -124,7 +124,7 @@
       job_type: "run"
       inventory: Genie Inventory
       project: Genie Git Project
-      playbook: eGovFrame/eGov_deploy.yml
+      playbook: playbook/eGovFrame/eGov_deploy.yml
       credentials:
         - "Automation Controller Credential"
       state: "present"
