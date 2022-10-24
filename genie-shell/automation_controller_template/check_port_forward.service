@@ -1,0 +1,11 @@
+[Unit] 
+Description =  Check port_forward 
+After = network.target 
+
+[Service] 
+User=root
+Restart=on-failure
+ExecStart=/genie/check_port_forward/check_port_forward.sh
+
+[Install] 
+WantedBy=multi-user.target

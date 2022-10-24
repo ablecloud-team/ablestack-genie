@@ -1,0 +1,101 @@
+---
+- name: AWX 개발환경 구성
+  hosts: localhost
+  vars:
+    base_path: 'genie'
+
+    conntrack_version: '1.4.4-10.el8'
+    make_version: '1:4.2.1-11.el8'
+    git_version: '2.31.1-2.el8'
+    
+    docker_ce_verion: '3:20.10.14-3.el8'
+    docker_cli_verion: '1:20.10.14-3.el8'
+    docker_containerd_io_verion: '1.5.11-3.1.el8'
+    docker_hub_user_id: 'ablecloudteam'
+    docker_hub_user_password: 'Ablecloud1!'
+    docker_compose_version: 'v2.4.1'
+
+    awx_repo_url: 'https://github.com/stardom3645/awx.git'
+    awx_repo_branch: 'devel'
+
+    firewall_add_port: '22-9999'
+
+    container_name: 'awx'
+    docker_commit_msg : 'ABLESTACK Automation Service' 
+    docker_commit_repo : 'ablecloudteam/genie-awx' 
+    docker_commit_tag : 'latest'
+
+  gather_facts: no
+  tasks:
+    - name: 패키지 설치
+      dnf:
+        name:
+          - conntrack-tools-{{ conntrack_version }}
+          - make-{{ make_version }}
+          - git-{{ git_version }}
+        state: present
+        
+    - name: 도커 설치 1/4 # podman 삭제
+      dnf:
+        name:
+          - podman 
+          - buildah
+        state: absent
+
+    - name: 도커 설치 2/4 # 도커 저장소 추가
+      shell: dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
+
+    - name: 도커 설치 3/4 # 도커 설치
+      dnf:
+        name:
+          - docker-ce-{{ docker_ce_verion }}
+          - docker-ce-cli-{{ docker_cli_verion }}
+          - containerd.io-{{ docker_containerd_io_verion }}
+        state: present
+
+    - name: 도커 설치 4/4 # 도커 서비스 시작
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+        masked: no
+
+    - name: DockerHub 로그인
+      community.docker.docker_login:
+        username: "{{ docker_hub_user_id }}"
+        password: "{{ docker_hub_user_password }}"
+
+    - name: docker-compose 설치
+      shell: | 
+        curl -SL https://github.com/docker/compose/releases/download/{{ docker_compose_version }}/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose
+        chmod +x /usr/local/bin/docker-compose
+
+    - name: Nodejs 설치 1/2 # 버전 16X 로 고정
+      shell: curl -sL https://rpm.nodesource.com/setup_16.x | sudo -E bash - 
+
+    - name: Nodejs 설치 2/2
+      dnf:
+        name:
+          - nodejs
+        state: present
+
+    - name: Firewall Rules 설정
+      shell: | 
+        firewall-cmd --permanent --zone=public --add-port={{ firewall_add_port }}/tcp
+        firewall-cmd --reload
+
+    - name : awx repository 폴더 삭제
+      file:
+        path: /{{ base_path }}/awx/
+        state: absent
+
+    - name: awx repository 다운로드
+      shell: | 
+        git clone -b {{ awx_repo_branch }} {{ awx_repo_url }} /{{ base_path }}/awx
+
+    - name: 개발환경 컨테이너 이미지 빌드
+      shell: 
+        cmd: make docker-compose-build
+        chdir: /{{ base_path }}/awx/
+
+ 
