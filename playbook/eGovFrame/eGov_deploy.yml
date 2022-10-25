@@ -180,7 +180,7 @@
       job_type: "run"
       inventory: Genie Inventory
       project: Genie Git Project
-      playbook: eGovFrame/eGov_check.yml
+      playbook: playbook/eGovFrame/eGov_check.yml
       credentials:
         - "Automation Controller Credential"
       state: "present"
@@ -201,7 +201,7 @@
       job_type: "run"
       inventory: Genie Inventory
       project: Genie Git Project
-      playbook: eGovFrame/eGov_destroy.yml
+      playbook: playbook/eGovFrame/eGov_destroy.yml
       credentials:
         - "Automation Controller Credential"
       state: "present"

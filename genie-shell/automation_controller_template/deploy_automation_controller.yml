@@ -301,7 +301,7 @@
         default_environment: AWX EE (genie_latest)
         organization: "Default"
         scm_type: git
-        scm_url: https://github.com/sjyu1/playbook.git
+        scm_url: https://github.com/ablecloud-team/ablestack-genie.git
         scm_branch: main
         scm_update_on_launch: no
         state: present
@@ -316,7 +316,7 @@
         job_type: "run"
         inventory: Genie Inventory
         project: Genie Git Project
-        playbook: template/template_deploy.yml
+        playbook: playbook/template/template_deploy.yml
         credentials:
           - "Automation Controller Credential"
         state: "present"
