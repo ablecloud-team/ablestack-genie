@@ -302,7 +302,7 @@
         organization: "Default"
         scm_type: git
         scm_url: https://github.com/ablecloud-team/ablestack-genie.git
-        scm_branch: main
+        scm_branch: master
         scm_update_on_launch: no
         state: present
         controller_host: "http://{{ genie_ip }}:80"
