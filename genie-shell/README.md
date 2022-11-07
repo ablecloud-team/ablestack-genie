@@ -137,31 +137,33 @@ deploy_awx_devel_env.yml  # Automation Controller AWX 개발환경을 구성하�
   ```
   - 로그인 화면 배경
     - awx/ui/node_modules/@patternfly/react-styles/css/components/BackgroundImage/background-image.css
-    .pf-c-background-image::before {
-    background-size: 50%;
-    background-color: black;
-    background-position: right;
-    }
+      .pf-c-background-image::before {
+      background-size: 50%;
+      background-color: black;
+      background-position: right;
+      }
 
   - 로그인 화면 로고 이미지
-   - awx/ui/node_modules/@patternfly/react-styles/css/components/Brand/brand.css
-    .pf-c-brand {
-    max-width: 70%;
-    }
+    - awx/ui/node_modules/@patternfly/react-styles/css/components/Brand/brand.css
+      .pf-c-brand {
+      max-width: 70%;
+      }
 
 
-  - awx/ui/node_modules/@patternfly/react-styles/css/components/AboutModalBox/about-modal-box.css
-    - About 화면 이미지
-    .pf-c-about-modal-box__hero{
-    background-size: 20%;
-    background-position-x: 75%;
-    background-position-y: 50%;
-    }
+  
+  - About 화면 이미지
+    - awx/ui/node_modules/@patternfly/react-styles/css/components/AboutModalBox/about-modal-box.css
+      .pf-c-about-modal-box__hero{
+      background-size: 20%;
+      background-position-x: 75%;
+      background-position-y: 50%;
+      }
 
-    - About 화면 배경
-    .pf-c-about-modal-box{
-    background-color: black;
-    }
+  - About 화면 배경
+    - awx/ui/node_modules/@patternfly/react-styles/css/components/AboutModalBox/about-modal-box.css
+      .pf-c-about-modal-box{
+      background-color: black;
+      }
   ```
 
 ### AWX 개발 완료 후 빌드 및 패키징
