@@ -8,7 +8,6 @@
     minikube_ram: '6g'
     minikube_version: 'v1.25.2'
     kubectl_version: 'v1.23.5'
-    # awx_operator_version: '0.17.0'
     awx_operator_version: '0.20.2'
 
     conntrack_version: '1.4.4-10.el8'
@@ -237,11 +236,11 @@
     - shell: kubectl get pods -n awx -l "app.kubernetes.io/managed-by=awx-operator" -o json
       register: kubectl_get_pod_awx_deployment
       until: kubectl_get_pod_awx_deployment.stdout | from_json | json_query('items[*].status.phase') | unique == ["Running"]
-      retries: 20
+      retries: 30
     - shell: kubectl get svc -n awx -l "app.kubernetes.io/managed-by=awx-operator" -o json
       register: kubectl_get_pod_awx_service
       until: kubectl_get_pod_awx_service.stdout | from_json | json_query('items[*].metadata.name') | unique == ["awx-postgres", "awx-service"]
-      retries: 20
+      retries: 30
 
     - name: Genie 대시보드 및 DB 포트포워딩 서비스 시작
       systemd:

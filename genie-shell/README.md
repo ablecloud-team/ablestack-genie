@@ -127,15 +127,52 @@ deploy_awx_devel_env.yml  # Automation Controller AWX 개발환경을 구성하�
   $ npm --prefix=awx/ui install
   $ npm --prefix=awx/ui start
   ```
+  - 오류 발생 시
+    ```
+    $ npm --prefix=awx/ui install --save --legacy-peer-deps
+    $ npm --prefix=awx/ui start
+    ```
+
+### AWX CSS 변경
+  ```
+  - 로그인 화면 배경
+    - awx/ui/node_modules/@patternfly/react-styles/css/components/BackgroundImage/background-image.css
+    .pf-c-background-image::before {
+    background-size: 50%;
+    background-color: black;
+    background-position: right;
+    }
+
+  - 로그인 화면 로고 이미지
+   - awx/ui/node_modules/@patternfly/react-styles/css/components/Brand/brand.css
+    .pf-c-brand {
+    max-width: 70%;
+    }
+
+
+  - awx/ui/node_modules/@patternfly/react-styles/css/components/AboutModalBox/about-modal-box.css
+    - About 화면 이미지
+    .pf-c-about-modal-box__hero{
+    background-size: 20%;
+    background-position-x: 75%;
+    background-position-y: 50%;
+    }
+
+    - About 화면 배경
+    .pf-c-about-modal-box{
+    background-color: black;
+    }
+  ```
 
 ### AWX 개발 완료 후 빌드 및 패키징
-- 클린 & 빌드
+- 빌드
   ```
-  $ docker exec tools_awx_1 make clean-ui ui-devel
+  $ npm --prefix awx/ui run build
   ```
 
 - 컨테이너 이미지로 빌드 (이미지 이름 및 테그 확인 후 실행합니다.)
   ```
+  # Back-end 및 Front-end 모두 실행 상태에서 실행합니다.
   $ ansible-playbook tools/ansible/build.yml \
     -e awx_image=ablecloudteam/genie-awx \
     -e awx_image_tag=latest -v
