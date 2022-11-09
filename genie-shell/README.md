@@ -148,8 +148,6 @@ deploy_awx_devel_env.yml  # Automation Controller AWX 개발환경을 구성하�
       .pf-c-brand {
       max-width: 70%;
       }
-
-
   
   - About 화면 이미지
     - awx/ui/node_modules/@patternfly/react-styles/css/components/AboutModalBox/about-modal-box.css
