@@ -9,7 +9,7 @@
     minikube_version: 'v1.25.2'
     kubectl_version: 'v1.23.5'
     # awx_operator_version: '0.17.0'
-    awx_operator_version: '0.20.2'
+    awx_operator_version: '0.26.0'
 
     conntrack_version: '1.4.4-10.el8'
     make_version: '1:4.2.1-11.el8'
