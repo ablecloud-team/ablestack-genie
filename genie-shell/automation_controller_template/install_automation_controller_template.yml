@@ -9,7 +9,7 @@
     minikube_version: 'v1.25.2'
     kubectl_version: 'v1.23.5'
     # awx_operator_version: '0.17.0'
-    awx_operator_version: '0.20.2'
+    awx_operator_version: '0.26.0'
 
     conntrack_version: '1.4.4-10.el8'
     make_version: '1:4.2.1-11.el8'
@@ -233,15 +233,20 @@
 
     - name: AWX Deployment, Service 상태 체크
       wait_for:
-        timeout: 90
-    - shell: kubectl get pods -n awx -l "app.kubernetes.io/managed-by=awx-operator" -o json
+        timeout: 120
+    - shell: kubectl get svc -l "app.kubernetes.io/managed-by=awx-operator" | awk '{print $1}' | grep "postgres"
+      register: postgres_name
+    - name: result
+      debug: 
+        msg: "{{ postgres_name.stdout }}"
+    - shell: kubectl get pods -l "app.kubernetes.io/managed-by=awx-operator" -o json
       register: kubectl_get_pod_awx_deployment
       until: kubectl_get_pod_awx_deployment.stdout | from_json | json_query('items[*].status.phase') | unique == ["Running"]
-      retries: 20
-    - shell: kubectl get svc -n awx -l "app.kubernetes.io/managed-by=awx-operator" -o json
+      retries: 30
+    - shell: kubectl get svc -l "app.kubernetes.io/managed-by=awx-operator" -o json
       register: kubectl_get_pod_awx_service
-      until: kubectl_get_pod_awx_service.stdout | from_json | json_query('items[*].metadata.name') | unique == ["awx-postgres", "awx-service"]
-      retries: 20
+      until: kubectl_get_pod_awx_service.stdout | from_json | json_query('items[*].metadata.name') | unique == ["{{ postgres_name.stdout }}", "awx-service"]
+      retries: 30
 
     - name: Genie 대시보드 및 DB 포트포워딩 서비스 시작
       systemd:
@@ -262,7 +267,7 @@
       shell: curl -o /dev/null -s -w "%{http_code}\n" http://{{ genie_ip }}:80
       register: genie_return_code
       until: genie_return_code.stdout == "200"
-      retries: 50
+      retries: 60
 
     - name: AWX 초기 관리자 패스워드 추출
       shell: kubectl get -n awx secret awx-admin-password -o jsonpath="{.data.password}" | base64 --decode
