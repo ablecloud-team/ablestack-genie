@@ -1,0 +1,304 @@
+---
+### Deploy VirtualMachine ###
+- name: Genie를 활용한 Mold VM 배포 - gitea
+  hosts: localhost
+  gather_facts: no
+  vars:
+    # instance_nm: "{{ gitea_instance_name }}-{{ uuid }}"
+    base_path: "genie"
+    genie_ip: "localhost"
+  tasks:
+
+  - name: debug uuid stdout
+    set_fact:
+      uuid: "{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=5') }}"
+  - name: debug instance_nm stdout
+    set_fact:
+      gitea_instance_nm: "{{ gitea_instance_nm }}-{{uuid}}"
+
+  - name: 가상머신 생성 "{{ gitea_instance_nm }}"
+    cs_instance:
+      api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+      api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+      api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+      zone: "{{ lookup('env', 'MOLD_ZONE_NAME') }}"
+      name: "{{ gitea_instance_nm }}"
+      template: "{{ gitea_instance_temp }}"
+      service_offering: "{{ instance_computeoffer }}"
+      ssh_key: "{{ lookup('env', 'MOLD_SSH_KEYPAIR') }}"
+      user_data: |
+          #cloud-config
+          disable_root: false
+          ssh_pwauth: true
+      networks: "{{ lookup('env', 'AC_NETWORK_NAME') }}"
+    register: vm
+
+  - name: 생성한 가상머신이 부팅이 완료될 때까지 대기
+    wait_for_connection:
+      delay: 20
+      timeout: 300
+
+  - name: 배포한 가상머신 정보 수집
+    cs_instance_info:
+      api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+      api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+      api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+      name: "{{ gitea_instance_nm }}"
+    delegate_to: localhost
+    register: vm
+
+  - name: 배포 가상머신 ip 정보 수집
+    debug:
+      msg: "{{ vm.instances[0].nic[0].ipaddress }}"
+
+  - name: Create Public IP
+    cs_ip_address:
+      api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+      api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+      api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+      zone: "{{ lookup('env', 'MOLD_ZONE_NAME') }}"
+      network: "{{ lookup('env', 'AC_NETWORK_NAME') }}"
+    register: ac_public_ip
+
+  - name: Public IP 정보 수집
+    debug:
+      msg: "{{ ac_public_ip.ip_address }}"
+
+  - name: 배포 가상머신 인메모리 inventory에 등록
+    add_host:
+      hostname: "{{ ac_public_ip.ip_address }}"
+      groups:
+        - GiteaPublicIp
+
+  - name: Create a static NAT for "{{ ac_public_ip.ip_address }}" to "{{ gitea_instance_nm }}"
+    cs_staticnat:
+      api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+      api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+      api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+      ip_address: "{{ ac_public_ip.ip_address }}"
+      zone: "{{ lookup('env', 'MOLD_ZONE_NAME') }}"
+      vm: "{{ gitea_instance_nm }}"
+    delegate_to: localhost
+
+  - name: Allow port for public ip
+    cs_firewall:
+      api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+      api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+      api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+      ip_address: "{{ ac_public_ip.ip_address }}"
+      zone: "{{ lookup('env', 'MOLD_ZONE_NAME') }}"
+      start_port: "{{ item.port }}"
+      end_port: "{{ item.port }}"
+      protocol: "{{ item.protocol }}"
+    with_items:
+        - {port: 80, protocol: tcp}
+        - {port: 22, protocol: tcp}
+        - {port: 3000, protocol: tcp}
+        - {port: 3306, protocol: tcp}
+    delegate_to: localhost
+
+### Deploy DB Server ###
+- name: Deploy Gitea
+  hosts: GiteaPublicIp
+  gather_facts: no
+  vars:
+    - ansible_user: root
+    - ansible_ssh_pass: Ablecloud1!
+
+  tasks:
+  - name: Update Gitea config file
+    lineinfile:
+      path: "/etc/gitea/gitea.ini"
+      regexp: "{{item.regexp}}"
+      line: "{{item.line}}"
+    with_items:
+      - {'regexp': '^ROOT_URL', line: 'ROOT_URL              = http://{{ inventory_hostname }}:3000'}
+
+  - name: Start gitea service
+    systemd: name=gitea state=restarted
+
+
+
+
+#=============================================================
+
+### Deploy VirtualMachine ###
+- name: Genie를 활용한 Mold VM 배포 - jenkins
+  hosts: localhost
+  gather_facts: no
+  vars:
+    # instance_nm: "{{ gitea_instance_name }}-{{ uuid }}"
+    base_path: "genie"
+    genie_ip: "localhost"
+  tasks:
+
+  - name: debug uuid stdout
+    set_fact:
+      uuid: "{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=5') }}"
+  - name: debug instance_nm stdout
+    set_fact:
+      jenkins_instance_nm: "{{ jenkins_instance_nm }}-{{uuid}}"
+
+  - name: 가상머신 생성 "{{ jenkins_instance_nm }}"
+    cs_instance:
+      api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+      api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+      api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+      zone: "{{ lookup('env', 'MOLD_ZONE_NAME') }}"
+      name: "{{ jenkins_instance_nm }}"
+      template: "{{ jenkins_instance_temp }}"
+      service_offering: "{{ instance_computeoffer }}"
+      ssh_key: "{{ lookup('env', 'MOLD_SSH_KEYPAIR') }}"
+      user_data: |
+          #cloud-config
+          disable_root: false
+          ssh_pwauth: true
+      networks: "{{ lookup('env', 'AC_NETWORK_NAME') }}"
+    register: vm
+
+  - name: 생성한 가상머신이 부팅이 완료될 때까지 대기
+    wait_for_connection:
+      delay: 20
+      timeout: 300
+
+  - name: 배포한 가상머신 정보 수집
+    cs_instance_info:
+      api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+      api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+      api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+      name: "{{ jenkins_instance_nm }}"
+    delegate_to: localhost
+    register: vm
+
+  - name: 배포 가상머신 ip 정보 수집
+    debug:
+      msg: "{{ vm.instances[0].nic[0].ipaddress }}"
+
+  - name: Create Public IP
+    cs_ip_address:
+      api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+      api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+      api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+      zone: "{{ lookup('env', 'MOLD_ZONE_NAME') }}"
+      network: "{{ lookup('env', 'AC_NETWORK_NAME') }}"
+    register: ac_public_ip
+
+  - name: Public IP 정보 수집
+    debug:
+      msg: "{{ ac_public_ip.ip_address }}"
+
+  - name: 배포 가상머신 인메모리 inventory에 등록
+    add_host:
+      hostname: "{{ ac_public_ip.ip_address }}"
+      groups:
+        - JenkinsPublicIp
+
+  - name: Create a static NAT for "{{ ac_public_ip.ip_address }}" to "{{ jenkins_instance_nm }}"
+    cs_staticnat:
+      api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+      api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+      api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+      ip_address: "{{ ac_public_ip.ip_address }}"
+      zone: "{{ lookup('env', 'MOLD_ZONE_NAME') }}"
+      vm: "{{ jenkins_instance_nm }}"
+    delegate_to: localhost
+
+  - name: Allow port for public ip
+    cs_firewall:
+      api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+      api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+      api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+      ip_address: "{{ ac_public_ip.ip_address }}"
+      zone: "{{ lookup('env', 'MOLD_ZONE_NAME') }}"
+      start_port: "{{ item.port }}"
+      end_port: "{{ item.port }}"
+      protocol: "{{ item.protocol }}"
+    with_items:
+        - {port: 80, protocol: tcp}
+        - {port: 22, protocol: tcp}
+        - {port: 3000, protocol: tcp}
+        - {port: 8080, protocol: tcp}
+        - {port: 6443, protocol: tcp}
+        - {port: 8443, protocol: tcp}
+    delegate_to: localhost
+
+### jenkins ###
+- name: Deploy jenkins
+  hosts: JenkinsPublicIp
+  gather_facts: no
+  vars:
+    - ansible_user: root
+    - ansible_ssh_pass: Ablecloud1!
+
+    #MySQL Settings
+    - login_user: root
+    - login_password: Ablecloud1!
+    - login_db: gitea
+  tasks:
+
+  # gitea 변경
+  - name: 배포한 gitea 가상머신 정보 수집("{{ gitea_instance_nm }}")
+    cs_instance_info:
+      api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+      api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+      api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+      name: "{{ gitea_instance_nm }}"
+    delegate_to: localhost
+    register: gitea_vm
+
+  - name: 배포 gitea 가상머신 ip 정보 수집
+    debug:
+      msg: "{{ gitea_vm.instances[0].public_ip }}"
+
+  - name: Update MySQL Data (Webhook ip)
+    community.mysql.mysql_query:
+      query:
+      - UPDATE webhook SET url = "http://{{ inventory_hostname }}:8080/gitea-webhook/post?job=gxRest" WHERE id =1
+      login_host: "{{ gitea_vm.instances[0].public_ip }}"
+      login_db: "{{ login_db }}"
+      login_user: "{{ login_user }}"
+      login_password: "{{ login_password }}"
+    delegate_to: localhost
+
+  - name: Update jenkins file (gitea server)
+    lineinfile:
+      path: "/var/lib/jenkins/org.jenkinsci.plugin.gitea.servers.GiteaServers.xml"
+      regexp: "{{item.regexp}}"
+      line: "{{item.line}}"
+    with_items:
+      - {'regexp': '^      <serverUrl>', line: '      <serverUrl>http://{{ gitea_vm.instances[0].public_ip }}:3000</serverUrl>'}
+
+  - name: Update jenkins file (gitea repo item)
+    lineinfile:
+      path: "/var/lib/jenkins/jobs/ablecloud-k8s/config.xml"
+      regexp: "{{item.regexp}}"
+      line: "{{item.line}}"
+    with_items:
+      - {'regexp': '^        <url>', line: '        <url>http://{{ gitea_vm.instances[0].public_ip }}:3000/ablecloud/ablecloud.git</url>'}
+
+  - name: Update jenkins file (jenkins addr-1)
+    lineinfile:
+      path: "/var/lib/jenkins/config.xml"
+      regexp: "{{item.regexp}}"
+      line: "{{item.line}}"
+    with_items:
+      - {'regexp': '^      <jenkinsUrl>', line: '      <jenkinsUrl>http://{{ inventory_hostname }}:8080/</jenkinsUrl>'}
+
+  - name: Update jenkins file (jenkins addr-2)
+    lineinfile:
+      path: "/var/lib/jenkins/jenkins.model.JenkinsLocationConfiguration.xml"
+      regexp: "{{item.regexp}}"
+      line: "{{item.line}}"
+    with_items:
+      - {'regexp': '^  <jenkinsUrl>', line: '  <jenkinsUrl>http://{{ inventory_hostname }}:8080/</jenkinsUrl>'}
+
+  - name: Update jenkins file (k8s addr)
+    lineinfile:
+      path: "/var/lib/jenkins/config.xml"
+      regexp: "{{item.regexp}}"
+      line: "{{item.line}}"
+    with_items:
+      - {'regexp': '^      <serverUrl>', line: '      <serverUrl>https://{{ k8s_addr }}:6443</serverUrl>'}
+
+  - name: Restart jenkins service
+    systemd: name=jenkins state=restarted
