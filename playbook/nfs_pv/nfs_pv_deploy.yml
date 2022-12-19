@@ -14,6 +14,7 @@
   - name: debug instance_nm stdout
     set_fact:
       nfs_storage_vm_nm: "{{ nfs_storage_vm }}-{{uuid}}"
+      nfs_data_disk_nm: "nfs-data-disk-{{uuid}}"
 
   - name: 가상머신 생성 "{{ nfs_storage_vm_nm }}"
     cs_instance:
@@ -24,19 +25,11 @@
       name: "{{ nfs_storage_vm_nm }}"
       template: "{{ nfs_storage_vm_temp }}"
       service_offering: "{{ instance_computeoffer }}"
-      disk_offering: "{{ disk_offering }}"
       ssh_key: "{{ lookup('env', 'MOLD_SSH_KEYPAIR') }}"
       user_data: |
           #cloud-config
           disable_root: false
           ssh_pwauth: true
-          runcmd:
-          - dnf install -y nfs-utils
-          - mkfs.ext4 /dev/sdb
-          - mkdir /nfs
-          - mount /dev/sdb /nfs
-          - echo "/nfs 10.10.0.0/16(rw,no_root_squash)" >> /etc/exports
-          - systemctl restart nfs-server
       networks: "{{ lookup('env', 'AC_NETWORK_NAME') }}"
     register: vm
 
@@ -53,6 +46,17 @@
       name: "{{ nfs_storage_vm_nm }}"
     delegate_to: localhost
     register: vm
+
+  - name: create/attach volume to instance
+    cs_volume:
+      api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+      api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+      api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+      zone: "{{ lookup('env', 'MOLD_ZONE_NAME') }}"
+      name: "{{ nfs_data_disk_nm }}"
+      disk_offering: "{{ disk_offering }}"
+      vm: "{{ nfs_storage_vm_nm }}"
+      state: attached
 
   - name: 배포 가상머신 ip 정보 수집
     debug:
@@ -119,6 +123,16 @@
     - kubectl_version: v1.26.0
 
   tasks:
+
+  - name: Deployment pv, pvc
+    shell: | 
+      dnf install -y nfs-utils
+      mkfs.ext4 /dev/sdb
+      mkdir /nfs
+      mount /dev/sdb /nfs
+      echo "/nfs 10.10.0.0/16(rw,no_root_squash)" >> /etc/exports
+      systemctl restart nfs-server
+
   - name: kubectl 설치
     shell: | 
       curl -LO "https://dl.k8s.io/release/{{ kubectl_version }}/bin/linux/amd64/kubectl"
