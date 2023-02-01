@@ -1,0 +1,67 @@
+{
+"name": "",
+"description": "",
+"spec": [
+  {
+    "question_name": "쿠버네티스 클러스터 정보를 입력하세요. (kubeconfig)",
+    "question_description": "Mold -> 컴퓨트 -> 쿠버네티스 -> 액세스 탭의 쿠버네티스 클러스터 정보를 복사하여 붙여주세요.",
+    "required": true,
+    "type": "textarea",
+    "variable": "kubeconfig",
+    "min": 0,
+    "max": 10000000,
+    "default": "",
+    "choices": "",
+    "new_question": false
+  },
+  {
+    "question_name": "NFS Storage VM 명",
+    "question_description": "NFS Storage VM 이름을 입력하세요",
+    "required": true,
+    "type": "text",
+    "variable": "nfs_storage_vm",
+    "min": 0,
+    "max": 1024,
+    "default": "nfs-storage-vm",
+    "choices": "",
+    "new_question": false
+  },
+  {
+    "question_name": "NFS Storage VM을 배포 템플릿 명",
+    "question_description": "NFS Storage VM을 배포하기 위한 템플릿의 이름을 입력하세요",
+    "required": true,
+    "type": "text",
+    "variable": "nfs_storage_vm_temp",
+    "min": 0,
+    "max": 1024,
+    "default": "CentOS-8-cloudinit",
+    "choices": "",
+    "new_question": false
+  },
+  {
+    "question_name": "NFS Storage VM 오퍼링 명",
+    "question_description": "NFS Storage VM을 배포하기 위한 오퍼링 이름을 입력하세요",
+    "required": true,
+    "type": "text",
+    "variable": "instance_computeoffer",
+    "min": 0,
+    "max": 1024,
+    "default": "1C-2GB-RBD-HA",
+    "choices": "",
+    "new_question": false
+  },
+  {
+    "question_name": "NFS Storage VM 데이터 디스크 오퍼링 명",
+    "question_description": "NFS Storage VM을 배포하기 위한 디스크 오퍼링 이름을 입력하세요",
+    "required": true,
+    "type": "text",
+    "variable": "disk_offering",
+    "min": 0,
+    "max": 1024,
+    "default": "100GB-WB-RBD",
+    "choices": "",
+    "new_question": false
+  }
+]
+}
+

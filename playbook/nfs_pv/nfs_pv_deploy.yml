@@ -1,0 +1,188 @@
+---
+### Deploy VirtualMachine ###
+- name: Genie를 활용한 Mold VM 배포 - NFS_PV Storage
+  hosts: localhost
+  gather_facts: no
+  vars:
+    base_path: "genie"
+    genie_ip: "localhost"
+  tasks:
+
+  - name: debug uuid stdout
+    set_fact:
+      uuid: "{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=5') }}"
+  - name: debug instance_nm stdout
+    set_fact:
+      nfs_storage_vm_nm: "{{ nfs_storage_vm }}-{{uuid}}"
+      nfs_data_disk_nm: "nfs-data-disk-{{uuid}}"
+
+  - name: 가상머신 생성 "{{ nfs_storage_vm_nm }}"
+    cs_instance:
+      api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+      api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+      api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+      zone: "{{ lookup('env', 'MOLD_ZONE_NAME') }}"
+      name: "{{ nfs_storage_vm_nm }}"
+      template: "{{ nfs_storage_vm_temp }}"
+      service_offering: "{{ instance_computeoffer }}"
+      ssh_key: "{{ lookup('env', 'MOLD_SSH_KEYPAIR') }}"
+      user_data: |
+          #cloud-config
+          disable_root: false
+          ssh_pwauth: true
+      networks: "{{ lookup('env', 'AC_NETWORK_NAME') }}"
+    register: vm
+
+  - name: 생성한 가상머신이 부팅이 완료될 때까지 대기
+    wait_for_connection:
+      delay: 20
+      timeout: 300
+
+  - name: 배포한 가상머신 정보 수집
+    cs_instance_info:
+      api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+      api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+      api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+      name: "{{ nfs_storage_vm_nm }}"
+    delegate_to: localhost
+    register: vm
+
+  - name: create/attach volume to instance
+    cs_volume:
+      api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+      api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+      api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+      zone: "{{ lookup('env', 'MOLD_ZONE_NAME') }}"
+      name: "{{ nfs_data_disk_nm }}"
+      disk_offering: "{{ disk_offering }}"
+      vm: "{{ nfs_storage_vm_nm }}"
+      state: attached
+
+  - name: 배포 가상머신 ip 정보 수집
+    debug:
+      msg: "{{ vm.instances[0].nic[0].ipaddress }}"
+
+  - name: Create Public IP
+    cs_ip_address:
+      api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+      api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+      api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+      zone: "{{ lookup('env', 'MOLD_ZONE_NAME') }}"
+      network: "{{ lookup('env', 'AC_NETWORK_NAME') }}"
+    register: ac_public_ip
+
+  - name: Public IP 정보 수집
+    debug:
+      msg: "{{ ac_public_ip.ip_address }}"
+
+  - name: 배포 가상머신 인메모리 inventory에 등록
+    add_host:
+      hostname: "{{ ac_public_ip.ip_address }}"
+      groups:
+        - NFSPublicIp
+
+  - name: Create a static NAT for "{{ ac_public_ip.ip_address }}" to "{{ nfs_storage_vm_nm }}"
+    cs_staticnat:
+      api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+      api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+      api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+      ip_address: "{{ ac_public_ip.ip_address }}"
+      zone: "{{ lookup('env', 'MOLD_ZONE_NAME') }}"
+      vm: "{{ nfs_storage_vm_nm }}"
+    delegate_to: localhost
+
+  - name: Allow port for public ip
+    cs_firewall:
+      api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+      api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+      api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+      ip_address: "{{ ac_public_ip.ip_address }}"
+      zone: "{{ lookup('env', 'MOLD_ZONE_NAME') }}"
+      start_port: "{{ item.port }}"
+      end_port: "{{ item.port }}"
+      protocol: "{{ item.protocol }}"
+    with_items:
+        - {port: 80, protocol: tcp}
+        - {port: 22, protocol: tcp}
+        - {port: 3000, protocol: tcp}
+        - {port: 8080, protocol: tcp}
+        - {port: 6443, protocol: tcp}
+        - {port: 8443, protocol: tcp}
+        - {port: 111, protocol: tcp}
+        - {port: 2049, protocol: tcp}
+    delegate_to: localhost
+
+### Deploy NFS Server ###
+- name: Deploy Gitea
+  hosts: NFSPublicIp
+  gather_facts: no
+  vars:
+    - ansible_user: root
+    - ansible_ssh_pass: Ablecloud1!
+
+    - kubectl_version: v1.26.0
+
+  tasks:
+
+  - name: Deployment pv, pvc
+    shell: | 
+      dnf install -y nfs-utils
+      mkfs.ext4 /dev/sdb
+      mkdir /nfs
+      mount /dev/sdb /nfs
+      echo "/nfs 10.10.0.0/16(rw,no_root_squash)" >> /etc/exports
+      systemctl restart nfs-server
+
+  - name: kubectl 설치
+    shell: | 
+      curl -LO "https://dl.k8s.io/release/{{ kubectl_version }}/bin/linux/amd64/kubectl"
+      install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
+  - name: Create a directory if it does not exist
+    file:
+      path: /root/.kube/
+      state: directory
+      mode: '0644'
+
+  - name: Creating a file with content kubeconfig
+    copy:
+      dest: "/root/.kube/config"
+      content: |
+        {{ kubeconfig }}
+
+  - name: Creating a file with content persistence volume
+    copy:
+      dest: "/root/pv-create.yaml"
+      content: |
+        apiVersion: v1
+        kind: PersistentVolume
+        metadata:
+          name: nfs-pc
+        spec:
+          capacity:
+            storage: 100Gi
+          accessModes:
+            - ReadWriteMany
+          nfs:
+            server: {{ inventory_hostname }}
+            path: /nfs
+
+  - name: Creating a file with content persistence volume claim
+    copy:
+      dest: "/root/pvc-create.yaml"
+      content: |
+        kind: PersistentVolumeClaim
+        apiVersion: v1
+        metadata:
+          name: nfs-pvc
+        spec:
+          accessModes:
+            - ReadWriteMany
+          resources:
+            requests:
+              storage: 100Gi
+
+  - name: Deployment pv, pvc
+    shell: | 
+      kubectl apply -f pv-create.yaml
+      kubectl apply -f pvc-create.yaml
