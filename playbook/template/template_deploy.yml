@@ -207,5 +207,5 @@
       controller_host: "http://{{ genie_ip }}:80"
       controller_username: admin
       controller_password: "{{ admin_password.stdout }}"
-      survey_enabled: yes
-      survey_spec: "{{ lookup('file', './nfs_pv_deploy_survey.json') }}"
+      survey_enabled: yes 
+      survey_spec: "{{ lookup('file', 'playbook/nfs_pv/nfs_pv_deploy_survey.json') }}"
