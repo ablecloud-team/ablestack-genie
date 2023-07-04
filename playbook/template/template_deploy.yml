@@ -200,7 +200,7 @@
       job_type: "run"
       inventory: Genie Inventory
       project: Genie Git Project
-      playbook: playbook/nfs_pv/nfs_pv_deploy_survey.yml
+      playbook: playbook/nfs_pv/nfs_pv_deploy.yml
       credentials:
         - "Automation Controller Credential"
       state: "present"
