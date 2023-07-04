@@ -1,6 +1,6 @@
 {
-"name": "test",
-"description": "test",
+"name": "",
+"description": "",
 "spec": [
   {
     "question_name": "쿠버네티스 클러스터 정보를 입력하세요. (kubeconfig)",
