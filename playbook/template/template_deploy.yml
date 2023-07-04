@@ -193,14 +193,14 @@
         instance_computeoffer: "1C-2GB-RBD-HA"
 
 # NFS-PV
-  - name: Create pipeline deploy playbook
+  - name: Create nfs pv deploy playbook
     awx.awx.job_template:
       name: NFS_PV Storage - 구축
       description: NFS_PV Storage - 구축
       job_type: "run"
       inventory: Genie Inventory
       project: Genie Git Project
-      playbook: playbook/pipeline/nfs_pv_deploy_survey.yml
+      playbook: playbook/nfs_pv/nfs_pv_deploy_survey.yml
       credentials:
         - "Automation Controller Credential"
       state: "present"
