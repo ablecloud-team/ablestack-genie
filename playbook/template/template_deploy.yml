@@ -208,4 +208,4 @@
       controller_username: admin
       controller_password: "{{ admin_password.stdout }}"
       survey_enabled: yes 
-      survey_spec: "{{ lookup('file', 'playbook/nfs_pv/nfs_pv_deploy_survey.json') }}"
+      survey_spec: "{{ lookup('url', 'https://raw.githubusercontent.com/ablecloud-team/ablestack-genie/master/playbook/nfs_pv/nfs_pv_deploy_survey.json') }}"
