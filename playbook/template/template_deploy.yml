@@ -193,19 +193,19 @@
         instance_computeoffer: "1C-2GB-RBD-HA"
 
 # NFS-PV
-  - name: Create pipeline deploy playbook
+  - name: Create nfs pv deploy playbook
     awx.awx.job_template:
       name: NFS_PV Storage - 구축
       description: NFS_PV Storage - 구축
       job_type: "run"
       inventory: Genie Inventory
       project: Genie Git Project
-      playbook: playbook/pipeline/nfs_pv_deploy_survey.yml
+      playbook: playbook/nfs_pv/nfs_pv_deploy.yml
       credentials:
         - "Automation Controller Credential"
       state: "present"
       controller_host: "http://{{ genie_ip }}:80"
       controller_username: admin
       controller_password: "{{ admin_password.stdout }}"
-      survey_enabled: yes
-      survey_spec: "{{ lookup('file', './nfs_pv_deploy_survey.json') }}"
+      survey_enabled: yes 
+      survey_spec: "{{ lookup('url', 'https://raw.githubusercontent.com/ablecloud-team/ablestack-genie/master/playbook/nfs_pv/nfs_pv_deploy_survey.json', split_lines=False) }}"
