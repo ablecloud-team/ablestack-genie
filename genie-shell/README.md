@@ -54,10 +54,12 @@ EE는 k8s환경에서 컨테이너 이미지로 구동되며 Ansible 플레이�
 
 디폴트 상태의 EE이미지에서는 아래 리스트에 명시된 모듈, pip 패키지, 설정파일이 존재하지 않기 때문에 
 플레이북을 사용하여 설치, 변경해야합니다.
-- EE 이미지 변경 내용 예:
-  - Asible 설정 변경
+- EE 이미지 변경 내용:
+  - asible.cfg 설정 변경
   - CS 모듈 설치 (Mold 컨트롤)
-  - http.conf 변경
+    - CS 모듈 설치 후 (sha1 -> sha256, https 설정 변경)
+  - http.conf 복사
+  - mold_genie_api.py 복사
 
 EE 커스터 마이징은 플레이북에 의해 공식 EE 컨테이너 이미지를 다운로드한 후 설정된 내용에 따라 변경된 다음, 자동으로 ABLECLOUD Docker Hub 저장소로 Push됩니다.
 이미지의 tag는 latest로 저장되며 특정 버전으로 업로드할 때에는 "awx_ee_template.yml" 파일의 "docker_commit_tag" 변수를 변경합니다.

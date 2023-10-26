@@ -15,7 +15,7 @@
 
     docker_hub_user_id: 'ablecloudteam'
     docker_hub_user_password: 'Ablecloud1!'
-    awx_ee_officail_version: 'latest'
+    awx_ee_officail_version: '21.11.0'
     container_name: 'awx-ee'
     docker_commit_msg : 'ABLESTACK Automation Service EE' 
     docker_commit_repo : 'ablecloudteam/genie-awx-ee' 

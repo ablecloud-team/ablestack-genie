@@ -2,8 +2,9 @@
 # -*- coding: utf-8 -*-
 
 import json
-import urllib2
 import urllib
+import urllib.parse
+import urllib.request
 import hashlib
 import hmac
 import base64
@@ -17,17 +18,17 @@ def createArgumentParser():
     # 참조: https://docs.python.org/ko/3/library/argparse.html
     # 프로그램 설명
     parser = argparse.ArgumentParser(description='AWX에서 Automation API를 사용하기 위한 프로그램',
-                                        epilog='copyrightⓒ 2022 All rights reserved by ABLECLOUD™',
-                                        usage='%(prog)s arguments')
+                                     epilog='copyrightⓒ 2022 All rights reserved by ABLECLOUD™',
+                                     usage='%(prog)s arguments')
 
     # 인자 추가: https://docs.python.org/ko/3/library/argparse.html#the-add-argument-method
 
     #--API Commond
     parser.add_argument('-c', '--commond', metavar='API Commond', choices=['listAutomationDeployedResource', 'addDeployedResourceGroup', 'addDeployedUnitResource', 'deleteDeployedResourceGroup', 'deleteDeployedUnitResource', 'updateDeployedResourceGroup'], type=str, help='input Value to API Commond', required=True)
-    
+
     #--Mold Service API Protocol
     parser.add_argument('-ap', '--api-protocol', metavar='Mold Service API Protocol', choices=['http', 'https'], type=str, help='input Value to Mold Service API Protocol', required=True)
-    
+
     #--Mold Service Network IP address
     parser.add_argument('-ip', '--ip-address', metavar='Mold Service Network IP address', type=str, help='input Value Mold Service Network IP address', required=True)
 
@@ -36,7 +37,7 @@ def createArgumentParser():
 
     #--Mold Automation Controller User apikey
     parser.add_argument('-ak', '--apikey', metavar='Mold Automation Controller User apikey', type=str, help='input Value Mold Automation Controller User apikey', required=True)
-    
+
     #--Mold Automation Controller User secretkey
     parser.add_argument('-sk', '--secretkey', metavar='Mold Automation Controller User secretkey', type=str, help='input Value Mold Automation Controller User secretkey', required=True)
 
@@ -57,10 +58,10 @@ def createArgumentParser():
 
     #--the ID of the instance the service is running on
     parser.add_argument('-vid', '--deployed-vm-id', metavar='the ID of the instance the service is running on', type=str, help='input Value the ID of the instance the service is running on')
-    
+
     #--the ID of the Automation Controller id
     parser.add_argument('-acid', '--automation-controller-id', metavar='the ID of the Automation Controller id', type=str, help='input Value the ID of the Automation Controller')
-    
+
     #--the name of deployed unit service
     parser.add_argument('-un', '--service-unit-name', metavar='the name of deployed unit service', type=str, help='input Value the name of deployed unit service')
 
@@ -79,17 +80,16 @@ def excuteApi(request, args):
     secretkey=args.secretkey
 
     baseurl=args.api_protocol+'://'+args.ip_address+':'+args.port+'/client/api?'
-    request_str='&'.join(['='.join([k,urllib.quote_plus(request[k])]) for k in request.keys()])
-
-    sig_str='&'.join(['='.join([k.lower(),urllib.quote_plus(request[k]).lower().replace('+','%20')])for k in sorted(request.iterkeys())])
-    sig=hmac.new(secretkey,sig_str,hashlib.sha1)
-    sig=hmac.new(secretkey,sig_str,hashlib.sha1).digest()
-    sig=base64.encodestring(hmac.new(secretkey,sig_str,hashlib.sha1).digest())
-    sig=base64.encodestring(hmac.new(secretkey,sig_str,hashlib.sha1).digest()).strip()
-    sig=urllib.quote_plus(base64.encodestring(hmac.new(secretkey,sig_str,hashlib.sha1).digest()).strip())
+    request_str='&'.join(['='.join([k,urllib.parse.quote_plus(request[k])]) for k in request.keys()])
+    sig_str='&'.join(['='.join([k.lower(),urllib.parse.quote_plus(request[k]).lower().replace('+','%20')])for k in sorted(request)])
+    sig=hmac.new(secretkey.encode('utf-8'),sig_str.encode('utf-8'),hashlib.sha256)
+    sig=hmac.new(secretkey.encode('utf-8'),sig_str.encode('utf-8'),hashlib.sha256).digest()
+    sig=base64.encodebytes(hmac.new(secretkey.encode('utf-8'),sig_str.encode('utf-8'),hashlib.sha256).digest())
+    sig=base64.encodebytes(hmac.new(secretkey.encode('utf-8'),sig_str.encode('utf-8'),hashlib.sha256).digest()).strip()
+    sig=urllib.parse.quote_plus(base64.encodebytes(hmac.new(secretkey.encode('utf-8'),sig_str.encode('utf-8'),hashlib.sha256).digest()).strip())
 
     req=baseurl+request_str+'&signature='+sig
-    res=urllib2.urlopen(req)
+    res=urllib.request.urlopen(req)
     return res.read()
 
 def listAutomationDeployedResource(args):
@@ -99,7 +99,7 @@ def listAutomationDeployedResource(args):
     request['name']=args.name
     request['response']='json'
     request['apikey']=args.apikey
-    
+
     # API 호출
     result = excuteApi(request, args)
     print(result)
@@ -115,7 +115,7 @@ def addDeployedResourceGroup(args):
     request['controllerid']=args.automation_controller_id
     request['response']='json'
     request['apikey']=args.apikey
-    
+
     # API 호출
     result = excuteApi(request, args)
     print(result)
@@ -169,13 +169,13 @@ def updateDeployedResourceGroup(args):
     request['state']=stateResultChecker(args.state)
     request['response']='json'
     request['apikey']=args.apikey
-    
+
     # API 호출
     result = excuteApi(request, args)
     print(result)
 
 if __name__ == '__main__':
-    
+
     # parser 생성
     parser = createArgumentParser()
     # input 파싱
@@ -187,7 +187,7 @@ if __name__ == '__main__':
             print ('name is null')
         else:
             listAutomationDeployedResource(args)
-        
+
     elif args.commond == 'addDeployedResourceGroup':
         #필수값 체크
         if args.name is None:
