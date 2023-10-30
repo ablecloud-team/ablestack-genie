@@ -38,7 +38,7 @@
 
   ### Save State ###
   - name: Check group
-    ansible.builtin.command: python2 /home/runner/mold_genie_api.py \
+    ansible.builtin.command: python3 /home/runner/mold_genie_api.py \
       -c listAutomationDeployedResource \
       -ap http -ip "{{ lookup('env', 'MOLD_DEFAULT_URL') }}" -p "{{ lookup('env', 'MOLD_DEFAULT_PORT') }}" \
       -ak "{{ lookup('env', 'MOLD_API_KEY') }}" \
@@ -56,7 +56,7 @@
   #     msg: "{{ list_jsondata }}"
 
   - name: Register Group
-    ansible.builtin.command: python2 /home/runner/mold_genie_api.py \
+    ansible.builtin.command: python3 /home/runner/mold_genie_api.py \
       -c addDeployedResourceGroup \
       -ap http -ip "{{ lookup('env', 'MOLD_DEFAULT_URL') }}" -p "{{ lookup('env', 'MOLD_DEFAULT_PORT') }}" \
       -ak "{{ lookup('env', 'MOLD_API_KEY') }}" \
@@ -69,7 +69,7 @@
     when: list_jsondata.listautomationdeployedresourceresponse == {}
 
   - name: Check group2
-    ansible.builtin.command: python2 /home/runner/mold_genie_api.py \
+    ansible.builtin.command: python3 /home/runner/mold_genie_api.py \
       -c listAutomationDeployedResource \
       -ap http -ip "{{ lookup('env', 'MOLD_DEFAULT_URL') }}" -p "{{ lookup('env', 'MOLD_DEFAULT_PORT') }}" \
       -ak "{{ lookup('env', 'MOLD_API_KEY') }}" \
@@ -87,7 +87,7 @@
   #     msg: "{{ list2_jsondata }}"
 
   - name: Delete unit resource
-    ansible.builtin.command: python2 /home/runner/mold_genie_api.py \
+    ansible.builtin.command: python3 /home/runner/mold_genie_api.py \
       -c deleteDeployedUnitResource \
       -ap http -ip "{{ lookup('env', 'MOLD_DEFAULT_URL') }}" -p "{{ lookup('env', 'MOLD_DEFAULT_PORT') }}" \
       -ak "{{ lookup('env', 'MOLD_API_KEY') }}" \
@@ -111,7 +111,7 @@
 
   # 서비스 단위별 상태 등록(mysqld)
   - name: Register unit resource
-    ansible.builtin.command: python2 /home/runner/mold_genie_api.py \
+    ansible.builtin.command: python3 /home/runner/mold_genie_api.py \
       -c addDeployedUnitResource \
       -ap http -ip "{{ lookup('env', 'MOLD_DEFAULT_URL') }}" -p "{{ lookup('env', 'MOLD_DEFAULT_PORT') }}" \
       -ak "{{ lookup('env', 'MOLD_API_KEY') }}" \
@@ -138,7 +138,7 @@
 
   # 서비스 단위별 상태 등록(tomcat)
   - name: Register unit resource
-    ansible.builtin.command: python2 /home/runner/mold_genie_api.py \
+    ansible.builtin.command: python3 /home/runner/mold_genie_api.py \
       -c addDeployedUnitResource \
       -ap http -ip "{{ lookup('env', 'MOLD_DEFAULT_URL') }}" -p "{{ lookup('env', 'MOLD_DEFAULT_PORT') }}" \
       -ak "{{ lookup('env', 'MOLD_API_KEY') }}" \
@@ -165,7 +165,7 @@
 
   # 서비스 단위별 상태 등록(nginx)
   - name: Register unit resource
-    ansible.builtin.command: python2 /home/runner/mold_genie_api.py \
+    ansible.builtin.command: python3 /home/runner/mold_genie_api.py \
       -c addDeployedUnitResource \
       -ap http -ip "{{ lookup('env', 'MOLD_DEFAULT_URL') }}" -p "{{ lookup('env', 'MOLD_DEFAULT_PORT') }}" \
       -ak "{{ lookup('env', 'MOLD_API_KEY') }}" \
@@ -179,7 +179,7 @@
 
   # 서비스 그룹 상태 업데이트
   - name: Update group(active)
-    ansible.builtin.command: python2 /home/runner/mold_genie_api.py \
+    ansible.builtin.command: python3 /home/runner/mold_genie_api.py \
       -c updateDeployedResourceGroup \
       -ap http -ip "{{ lookup('env', 'MOLD_DEFAULT_URL') }}" -p "{{ lookup('env', 'MOLD_DEFAULT_PORT') }}" \
       -ak "{{ lookup('env', 'MOLD_API_KEY') }}" \
@@ -190,7 +190,7 @@
     when: mysqld_state_result.stdout == "active" and tomcat_state_result.stdout == "active" and nginx_state_result.stdout == "active"
 
   - name: Update group(inactive)
-    ansible.builtin.command: python2 /home/runner/mold_genie_api.py \
+    ansible.builtin.command: python3 /home/runner/mold_genie_api.py \
       -c updateDeployedResourceGroup \
       -ap http -ip "{{ lookup('env', 'MOLD_DEFAULT_URL') }}" -p "{{ lookup('env', 'MOLD_DEFAULT_PORT') }}" \
       -ak "{{ lookup('env', 'MOLD_API_KEY') }}" \

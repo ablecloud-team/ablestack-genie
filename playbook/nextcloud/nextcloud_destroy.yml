@@ -9,7 +9,7 @@
 
   ### Delete resource package  ###
   - name: 서비스 그룹 상태정보 삭제 및 단위별 상태정보 삭제
-    ansible.builtin.command: python2 /home/runner/mold_genie_api.py \
+    ansible.builtin.command: python3 /home/runner/mold_genie_api.py \
       -c deleteDeployedResourceGroup \
       -ap http -ip "{{ lookup('env', 'MOLD_DEFAULT_URL') }}" -p "{{ lookup('env', 'MOLD_DEFAULT_PORT') }}" \
       -ak "{{ lookup('env', 'MOLD_API_KEY') }}" \
