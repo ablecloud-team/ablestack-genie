@@ -24,7 +24,7 @@
   - name: Check group
     ansible.builtin.command: python3 /home/runner/mold_genie_api.py \
       -c listAutomationDeployedResource \
-      -ap http -ip "{{ lookup('env', 'MOLD_DEFAULT_URL') }}" -p "{{ lookup('env', 'MOLD_DEFAULT_PORT') }}" \
+      -ap "{{ lookup('env', 'MOLD_DEFAULT_PROTOCOL') }}" -ip "{{ lookup('env', 'MOLD_DEFAULT_URL') }}" -p "{{ lookup('env', 'MOLD_DEFAULT_PORT') }}" \
       -ak "{{ lookup('env', 'MOLD_API_KEY') }}" \
       -sk "{{ lookup('env', 'MOLD_SECRET_KEY') }}" \
       -n "{{ service_group }}"
@@ -45,7 +45,7 @@
   - name: Register Group
     ansible.builtin.command: python3 /home/runner/mold_genie_api.py \
       -c addDeployedResourceGroup \
-      -ap http -ip "{{ lookup('env', 'MOLD_DEFAULT_URL') }}" -p "{{ lookup('env', 'MOLD_DEFAULT_PORT') }}" \
+      -ap "{{ lookup('env', 'MOLD_DEFAULT_PROTOCOL') }}" -ip "{{ lookup('env', 'MOLD_DEFAULT_URL') }}" -p "{{ lookup('env', 'MOLD_DEFAULT_PORT') }}" \
       -ak "{{ lookup('env', 'MOLD_API_KEY') }}" \
       -sk "{{ lookup('env', 'MOLD_SECRET_KEY') }}" \
       -zid "{{ lookup('env', 'MOLD_ZONE_ID') }}" \
@@ -59,7 +59,7 @@
   - name: Check group
     ansible.builtin.command: python3 /home/runner/mold_genie_api.py \
       -c listAutomationDeployedResource \
-      -ap http -ip "{{ lookup('env', 'MOLD_DEFAULT_URL') }}" -p "{{ lookup('env', 'MOLD_DEFAULT_PORT') }}" \
+      -ap "{{ lookup('env', 'MOLD_DEFAULT_PROTOCOL') }}" -ip "{{ lookup('env', 'MOLD_DEFAULT_URL') }}" -p "{{ lookup('env', 'MOLD_DEFAULT_PORT') }}" \
       -ak "{{ lookup('env', 'MOLD_API_KEY') }}" \
       -sk "{{ lookup('env', 'MOLD_SECRET_KEY') }}" \
       -n "{{ service_group }}"
@@ -77,7 +77,7 @@
   - name: Delete unit resource
     ansible.builtin.command: python3 /home/runner/mold_genie_api.py \
       -c deleteDeployedUnitResource \
-      -ap http -ip "{{ lookup('env', 'MOLD_DEFAULT_URL') }}" -p "{{ lookup('env', 'MOLD_DEFAULT_PORT') }}" \
+      -ap "{{ lookup('env', 'MOLD_DEFAULT_PROTOCOL') }}" -ip "{{ lookup('env', 'MOLD_DEFAULT_URL') }}" -p "{{ lookup('env', 'MOLD_DEFAULT_PORT') }}" \
       -ak "{{ lookup('env', 'MOLD_API_KEY') }}" \
       -sk "{{ lookup('env', 'MOLD_SECRET_KEY') }}" \
       -gid "{{ list2_jsondata.listautomationdeployedresourceresponse.automationdeployedresource[0].id }}"
@@ -95,7 +95,7 @@
   - name: Register unit resource
     ansible.builtin.command: python3 /home/runner/mold_genie_api.py \
       -c addDeployedUnitResource \
-      -ap http -ip "{{ lookup('env', 'MOLD_DEFAULT_URL') }}" -p "{{ lookup('env', 'MOLD_DEFAULT_PORT') }}" \
+      -ap "{{ lookup('env', 'MOLD_DEFAULT_PROTOCOL') }}" -ip "{{ lookup('env', 'MOLD_DEFAULT_URL') }}" -p "{{ lookup('env', 'MOLD_DEFAULT_PORT') }}" \
       -ak "{{ lookup('env', 'MOLD_API_KEY') }}" \
       -sk "{{ lookup('env', 'MOLD_SECRET_KEY') }}" \
       -gid "{{ list2_jsondata.listautomationdeployedresourceresponse.automationdeployedresource[0].id }}" \
@@ -116,7 +116,7 @@
   - name: Register unit resource
     ansible.builtin.command: python3 /home/runner/mold_genie_api.py \
       -c addDeployedUnitResource \
-      -ap http -ip "{{ lookup('env', 'MOLD_DEFAULT_URL') }}" -p "{{ lookup('env', 'MOLD_DEFAULT_PORT') }}" \
+      -ap "{{ lookup('env', 'MOLD_DEFAULT_PROTOCOL') }}" -ip "{{ lookup('env', 'MOLD_DEFAULT_URL') }}" -p "{{ lookup('env', 'MOLD_DEFAULT_PORT') }}" \
       -ak "{{ lookup('env', 'MOLD_API_KEY') }}" \
       -sk "{{ lookup('env', 'MOLD_SECRET_KEY') }}" \
       -gid "{{ list2_jsondata.listautomationdeployedresourceresponse.automationdeployedresource[0].id }}" \
@@ -128,7 +128,7 @@
   - name: Update group(active)
     ansible.builtin.command: python3 /home/runner/mold_genie_api.py \
       -c updateDeployedResourceGroup \
-      -ap http -ip "{{ lookup('env', 'MOLD_DEFAULT_URL') }}" -p "{{ lookup('env', 'MOLD_DEFAULT_PORT') }}" \
+      -ap "{{ lookup('env', 'MOLD_DEFAULT_PROTOCOL') }}" -ip "{{ lookup('env', 'MOLD_DEFAULT_URL') }}" -p "{{ lookup('env', 'MOLD_DEFAULT_PORT') }}" \
       -ak "{{ lookup('env', 'MOLD_API_KEY') }}" \
       -sk "{{ lookup('env', 'MOLD_SECRET_KEY') }}" \
       -gid "{{ list2_jsondata.listautomationdeployedresourceresponse.automationdeployedresource[0].id }}" \
@@ -139,7 +139,7 @@
   - name: Update group(inactive)
     ansible.builtin.command: python3 /home/runner/mold_genie_api.py \
       -c updateDeployedResourceGroup \
-      -ap http -ip "{{ lookup('env', 'MOLD_DEFAULT_URL') }}" -p "{{ lookup('env', 'MOLD_DEFAULT_PORT') }}" \
+      -ap "{{ lookup('env', 'MOLD_DEFAULT_PROTOCOL') }}" -ip "{{ lookup('env', 'MOLD_DEFAULT_URL') }}" -p "{{ lookup('env', 'MOLD_DEFAULT_PORT') }}" \
       -ak "{{ lookup('env', 'MOLD_API_KEY') }}" \
       -sk "{{ lookup('env', 'MOLD_SECRET_KEY') }}" \
       -gid "{{ list2_jsondata.listautomationdeployedresourceresponse.automationdeployedresource[0].id }}" \
