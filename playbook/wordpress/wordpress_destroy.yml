@@ -11,7 +11,7 @@
   - name: 서비스 그룹 상태정보 삭제 및 단위별 상태정보 삭제
     ansible.builtin.command: python3 /home/runner/mold_genie_api.py \
       -c deleteDeployedResourceGroup \
-      -ap http -ip "{{ lookup('env', 'MOLD_DEFAULT_URL') }}" -p "{{ lookup('env', 'MOLD_DEFAULT_PORT') }}" \
+      -ap "{{ lookup('env', 'MOLD_DEFAULT_PROTOCOL') }}" -ip "{{ lookup('env', 'MOLD_DEFAULT_URL') }}" -p "{{ lookup('env', 'MOLD_DEFAULT_PORT') }}" \
       -ak "{{ lookup('env', 'MOLD_API_KEY') }}" \
       -sk "{{ lookup('env', 'MOLD_SECRET_KEY') }}" \
       -zid "{{ lookup('env', 'MOLD_ZONE_ID') }}" \

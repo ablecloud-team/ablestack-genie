@@ -145,6 +145,7 @@
             AC_NETWORK_ADDRESS: "{{ ansible_default_ipv4.address }}"
             MOLD_DEFAULT_URL: "{{ MOLD_DEFAULT_URL }}"
             MOLD_DEFAULT_PORT: "{{ MOLD_DEFAULT_PORT }}"
+            MOLD_DEFAULT_PROTOCOL: "{{ MOLD_DEFAULT_PROTOCOL[:-3] }}"
         controller_host: "http://{{ genie_ip }}:80"
         controller_username: admin
         controller_password: "{{ admin_password.stdout }}"

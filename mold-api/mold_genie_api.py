@@ -9,6 +9,7 @@ import hashlib
 import hmac
 import base64
 import argparse
+import ssl
 
 def createArgumentParser():
     '''
@@ -89,8 +90,9 @@ def excuteApi(request, args):
     sig=urllib.parse.quote_plus(base64.encodebytes(hmac.new(secretkey.encode('utf-8'),sig_str.encode('utf-8'),hashlib.sha256).digest()).strip())
 
     req=baseurl+request_str+'&signature='+sig
-    res=urllib.request.urlopen(req)
-    return res.read()
+    context = ssl._create_unverified_context()
+    res=urllib.request.urlopen(req, context=context)
+    return res.read().decode()
 
 def listAutomationDeployedResource(args):
     # reqest 세팅
