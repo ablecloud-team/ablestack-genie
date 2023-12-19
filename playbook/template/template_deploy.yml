@@ -170,42 +170,42 @@
   #     controller_password: "{{ admin_password.stdout }}"    
 
 # pipeline
-  - name: Create pipeline deploy playbook
-    awx.awx.job_template:
-      name: Pipeline - 구축 (Gitea, Jenkins, k8s)
-      description: CI/CD를 위한 파이프라인(Gitea, Jenkins, k8s)을 구성합니다.
-      job_type: "run"
-      inventory: Genie Inventory
-      project: Genie Git Project
-      playbook: playbook/pipeline/pipeline_deploy.yml
-      credentials:
-        - "Automation Controller Credential"
-      state: "present"
-      controller_host: "http://{{ genie_ip }}:80"
-      controller_username: admin
-      controller_password: "{{ admin_password.stdout }}"
-      extra_vars: 
-        k8s_addr: "10.10.10.10"
-        gitea_instance_nm: "gitea-pipeline-instance-nm-01"
-        gitea_instance_temp: "genie-pipeline-gitea-cloudinit"
-        jenkins_instance_nm: "jenkins-pipeline-instance-nm-01"
-        jenkins_instance_temp: "genie-pipeline-jenkins-cloudinit"
-        instance_computeoffer: "1C-2GB-RBD-HA"
+#  - name: Create pipeline deploy playbook
+#    awx.awx.job_template:
+#      name: Pipeline - 구축 (Gitea, Jenkins, k8s)
+#      description: CI/CD를 위한 파이프라인(Gitea, Jenkins, k8s)을 구성합니다.
+#      job_type: "run"
+#      inventory: Genie Inventory
+#      project: Genie Git Project
+#      playbook: playbook/pipeline/pipeline_deploy.yml
+#      credentials:
+#        - "Automation Controller Credential"
+#      state: "present"
+#      controller_host: "http://{{ genie_ip }}:80"
+#      controller_username: admin
+#      controller_password: "{{ admin_password.stdout }}"
+#      extra_vars:
+#        k8s_addr: "10.10.10.10"
+#        gitea_instance_nm: "gitea-pipeline-instance-nm-01"
+#        gitea_instance_temp: "genie-pipeline-gitea-cloudinit"
+#        jenkins_instance_nm: "jenkins-pipeline-instance-nm-01"
+#        jenkins_instance_temp: "genie-pipeline-jenkins-cloudinit"
+#        instance_computeoffer: "1C-2GB-RBD-HA"
 
 # NFS-PV
-  - name: Create nfs pv deploy playbook
-    awx.awx.job_template:
-      name: NFS_PV Storage - 구축
-      description: NFS_PV Storage - 구축
-      job_type: "run"
-      inventory: Genie Inventory
-      project: Genie Git Project
-      playbook: playbook/nfs_pv/nfs_pv_deploy.yml
-      credentials:
-        - "Automation Controller Credential"
-      state: "present"
-      controller_host: "http://{{ genie_ip }}:80"
-      controller_username: admin
-      controller_password: "{{ admin_password.stdout }}"
-      survey_enabled: yes 
-      survey_spec: "{{ lookup('url', 'https://raw.githubusercontent.com/ablecloud-team/ablestack-genie/master/playbook/nfs_pv/nfs_pv_deploy_survey.json', split_lines=False) }}"
+#  - name: Create nfs pv deploy playbook
+#    awx.awx.job_template:
+#      name: NFS_PV Storage - 구축
+#      description: NFS_PV Storage - 구축
+#      job_type: "run"
+#      inventory: Genie Inventory
+#      project: Genie Git Project
+#      playbook: playbook/nfs_pv/nfs_pv_deploy.yml
+#      credentials:
+#        - "Automation Controller Credential"
+#      state: "present"
+#      controller_host: "http://{{ genie_ip }}:80"
+#      controller_username: admin
+#      controller_password: "{{ admin_password.stdout }}"
+#      survey_enabled: yes
+#      survey_spec: "{{ lookup('url', 'https://raw.githubusercontent.com/ablecloud-team/ablestack-genie/master/playbook/nfs_pv/nfs_pv_deploy_survey.json', split_lines=False) }}"
