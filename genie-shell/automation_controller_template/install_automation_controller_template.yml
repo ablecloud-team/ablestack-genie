@@ -4,8 +4,8 @@
   vars:
     base_path: genie
     
-    minikube_cpu: '4'
-    minikube_ram: '6g'
+    minikube_cpu: '2'
+    minikube_ram: '3g'
     minikube_version: 'v1.25.2'
     kubectl_version: 'v1.23.5'
     # awx_operator_version: '0.17.0'
