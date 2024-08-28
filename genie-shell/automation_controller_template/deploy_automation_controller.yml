@@ -11,7 +11,7 @@
     default_inventory_id: '1'
     default_template_id: '7'
     default_organization: '1'
-  vars_files: 
+  vars_files:
     - /genie/ansible_vars_files.json
   gather_facts: yes
   tasks:
@@ -21,8 +21,8 @@
     - name: Start Minikube cluster
       shell: minikube start --cpus={{ minikube_cpu }} --memory={{ minikube_ram }} --addons=ingress --install-addons=true --driver=docker --force
       tags:
-         - start minikube
-         
+        - start minikube
+
     - name: Minikube status check
       shell: minikube status |awk -F ' ' '/{{item.shell}}/{ print $2 }'
       register: minikube_host_stauts
@@ -72,7 +72,7 @@
         api_key: "{{ MOLD_API_KEY }}"
         api_secret: "{{ MOLD_SECRET_KEY }}"
         zone: "{{ MOLD_ZONE_NAME }}"
-        
+
     - name: Automation Controller Port Forwarding Settings
       cs_portforward:
         ip_address: "{{ AC_PUBLIC_IP }}"
@@ -84,10 +84,14 @@
         public_port: "{{ item }}"
         private_port: "{{ item }}"
       with_items:
-      - 80
-      - 22
-      - 5432
-      - 8001
+        - 80
+        - 22
+        - 5432
+        - 8001
+      register: portforward_result
+      until: portforward_result is succeeded
+      retries: 5
+      delay: 10
 
     - name: Automation Controller Firewall Settings (TCP)
       cs_firewall:
@@ -100,10 +104,10 @@
         api_secret: "{{ MOLD_SECRET_KEY }}"
         zone: "{{ MOLD_ZONE_NAME }}"
       with_items:
-      - 80
-      - 22
-      - 5432
-      - 8001
+        - 80
+        - 22
+        - 5432
+        - 8001
 
     - name: Genie Dashboard waiting for response
       shell: curl -o /dev/null -s -w "%{http_code}\n" http://{{ genie_ip }}:80
@@ -124,7 +128,7 @@
         api_secret: "{{ MOLD_SECRET_KEY }}"
         zone: "{{ MOLD_ZONE_NAME }}"
 
-##### AWX 셋팅
+    ##### AWX 셋팅
     - name: Extract AWX initial administrator password
       shell: kubectl get -n awx secret awx-admin-password -o jsonpath="{.data.password}" | base64 --decode
       register: admin_password
@@ -177,7 +181,7 @@
             "description": "Genie EE에 SSH 접근을 위한 인증 정보입니다."
           }
         status_code: 200
-        
+
     - name: Delete default project
       uri:
         url: http://{{ genie_ip }}:80/api/v2/projects/{{ default_project_id }}/
@@ -231,7 +235,7 @@
           ssh_key_data: "{{ lookup('file', '/root/.ssh/id_rsa') }}"
         controller_host: "http://{{ genie_ip }}:80"
         controller_username: admin
-        controller_password: "{{ admin_password.stdout }}" 
+        controller_password: "{{ admin_password.stdout }}"
 
     - name: Add host (automation controller) to genie_inventory (default inventory)
       uri:
