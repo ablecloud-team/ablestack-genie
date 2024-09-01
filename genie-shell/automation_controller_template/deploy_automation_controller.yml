@@ -61,48 +61,59 @@
         dest: /root/.ssh/authorized_keys
         line: "{{ id_pub.stdout }}"
 
+    # Genie Dashboard 접속 가능할 때에 ping check 허용하여 배포 완성 시기를 사용자에게 알림
     - name: Automation Controller Egress Settings (ICMP)
       cs_firewall:
         network: "{{ AC_NETWORK_NAME }}"
-        icmp_code: -1
-        icmp_type: -1
-        type: egress
-        protocol: icmp
         api_url: "{{ MOLD_API_URL }}"
         api_key: "{{ MOLD_API_KEY }}"
         api_secret: "{{ MOLD_SECRET_KEY }}"
         zone: "{{ MOLD_ZONE_NAME }}"
+        api_timeout: 60
+        icmp_code: -1
+        icmp_type: -1
+        protocol: icmp
+        type: egress
 
-    - name: Automation Controller Port Forwarding Settings
+    - name: Automation Controller Ingress Settings (ICMP)
+      cs_firewall:
+        ip_address: "{{ AC_PUBLIC_IP }}"
+        api_url: "{{ MOLD_API_URL }}"
+        api_key: "{{ MOLD_API_KEY }}"
+        api_secret: "{{ MOLD_SECRET_KEY }}"
+        zone: "{{ MOLD_ZONE_NAME }}"
+        api_timeout: 60
+        icmp_code: -1
+        icmp_type: -1
+        protocol: icmp
+
+    - name: Automation Controller Ingress Settings (tcp)
+      cs_firewall:
+        ip_address: "{{ AC_PUBLIC_IP }}"
+        api_url: "{{ MOLD_API_URL }}"
+        api_key: "{{ MOLD_API_KEY }}"
+        api_secret: "{{ MOLD_SECRET_KEY }}"
+        zone: "{{ MOLD_ZONE_NAME }}"
+        api_timeout: 60
+        type: ingress
+        protocol: tcp
+        cidrs: 0.0.0.0/0
+        start_port: 1
+        end_port: 65535
+
+    - name: Automation Controller Port forward Rule Settings
       cs_portforward:
+        network: "{{ AC_NETWORK_NAME }}"
         ip_address: "{{ AC_PUBLIC_IP }}"
         vm: "{{ AC_INSTANCE_NAME }}"
         api_url: "{{ MOLD_API_URL }}"
         api_key: "{{ MOLD_API_KEY }}"
         api_secret: "{{ MOLD_SECRET_KEY }}"
         zone: "{{ MOLD_ZONE_NAME }}"
+        open_firewall: true
         public_port: "{{ item }}"
         private_port: "{{ item }}"
-      with_items:
-        - 80
-        - 22
-        - 5432
-        - 8001
-      register: portforward_result
-      until: portforward_result is succeeded
-      retries: 5
-      delay: 10
-
-    - name: Automation Controller Firewall Settings (TCP)
-      cs_firewall:
-        ip_address: "{{ AC_PUBLIC_IP }}"
-        cidr: 0.0.0.0/0
-        port: "{{ item }}"
-        protocol: tcp
-        api_url: "{{ MOLD_API_URL }}"
-        api_key: "{{ MOLD_API_KEY }}"
-        api_secret: "{{ MOLD_SECRET_KEY }}"
-        zone: "{{ MOLD_ZONE_NAME }}"
+        api_timeout: 60
       with_items:
         - 80
         - 22
@@ -114,19 +125,6 @@
       register: genie_return_code
       until: genie_return_code.stdout == "200"
       retries: 50
-
-    # Genie Dashboard 접속 가능할 때에 ping check 허용하여 배포 완성 시기를 사용자에게 알림
-    - name: Automation Controller Firewall Settings (ICMP)
-      cs_firewall:
-        ip_address: "{{ AC_PUBLIC_IP }}"
-        cidr: 0.0.0.0/0
-        protocol: icmp
-        icmp_code: -1
-        icmp_type: -1
-        api_url: "{{ MOLD_API_URL }}"
-        api_key: "{{ MOLD_API_KEY }}"
-        api_secret: "{{ MOLD_SECRET_KEY }}"
-        zone: "{{ MOLD_ZONE_NAME }}"
 
     ##### AWX 셋팅
     - name: Extract AWX initial administrator password
