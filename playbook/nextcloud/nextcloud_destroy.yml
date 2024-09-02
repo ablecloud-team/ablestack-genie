@@ -5,6 +5,7 @@
   ignore_errors: yes
   vars:
     service_group: "Nextcloud-{{ uuid }}"
+    default_timeout: 70
   tasks:
 
   ### Delete resource package  ###
@@ -23,6 +24,7 @@
       api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
       api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
       name: "{{ instance_nm }}"
+      api_timeout: "{{ default_timeout }}"
     delegate_to: localhost
     register: vm
 
@@ -38,6 +40,7 @@
       zone: "{{ lookup('env', 'MOLD_ZONE_ID') }}"
       ip_address: "{{ vm.instances[0].public_ip }}"
       state: absent
+      api_timeout: "{{ default_timeout }}"
     delegate_to: localhost
 
   - name: Disassociate an IP address
@@ -48,6 +51,7 @@
       zone: "{{ lookup('env', 'MOLD_ZONE_ID') }}"
       ip_address: "{{ vm.instances[0].public_ip }}"
       state: absent
+      api_timeout: "{{ default_timeout }}"
     delegate_to: localhost
 
   - name: Destroyed VirtualMachine
@@ -58,6 +62,7 @@
       zone: "{{ lookup('env', 'MOLD_ZONE_ID') }}"
       name: "{{ instance_nm }}"
       state: destroyed
+      api_timeout: "{{ default_timeout }}"
     delegate_to: localhost
 
 - name: 서비스 상태체크 스케줄러 삭제

@@ -4,6 +4,7 @@
   gather_facts: no
   vars:
     service_group: "eGov-WebService-{{ uuid }}"
+    default_timeout: 70
   tasks:
 
   ### Info VirtualMachine ###
@@ -13,6 +14,7 @@
       api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
       api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
       name: "{{ db_instance_nm }}"
+      api_timeout: "{{ default_timeout }}"
     delegate_to: localhost
     register: db_vm
 
@@ -22,6 +24,7 @@
       api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
       api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
       name: "{{ was_instance_nm }}"
+      api_timeout: "{{ default_timeout }}"
     delegate_to: localhost
     register: was_vm
 
@@ -31,6 +34,7 @@
       api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
       api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
       name: "{{ web_instance_nm }}"
+      api_timeout: "{{ default_timeout }}"
     delegate_to: localhost
     register: web_vm
 

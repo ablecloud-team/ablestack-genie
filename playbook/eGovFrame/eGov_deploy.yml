@@ -6,6 +6,7 @@
   vars:
     base_path: "genie"
     genie_ip: "localhost"
+    default_timeout: 70
   tasks:
 
   - name: uuid 생성
@@ -32,6 +33,7 @@
           disable_root: false
           ssh_pwauth: true
       networks: "{{ lookup('env', 'AC_NETWORK_NAME') }}"
+      api_timeout: "{{ default_timeout }}"
     register: db_vm
 
   # - name: 생성한 가상머신이 부팅이 완료될 때까지 대기
@@ -64,6 +66,7 @@
           disable_root: false
           ssh_pwauth: true
       networks: "{{ lookup('env', 'AC_NETWORK_NAME') }}"
+      api_timeout: "{{ default_timeout }}"
     register: was_vm
 
   # - name: 생성한 가상머신이 부팅이 완료될 때까지 대기
@@ -96,6 +99,7 @@
           disable_root: false
           ssh_pwauth: true
       networks: "{{ lookup('env', 'AC_NETWORK_NAME') }}"
+      api_timeout: "{{ default_timeout }}"
     register: web_vm
 
   - name: 배포 가상머신 ip 정보 수집
@@ -134,6 +138,7 @@
       api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
       zone: "{{ lookup('env', 'MOLD_ZONE_NAME') }}"
       network: "{{ lookup('env', 'AC_NETWORK_NAME') }}"
+      api_timeout: "{{ default_timeout }}"
     register: ac_public_ip
 
   - name: Public IP 정보 수집
@@ -148,6 +153,7 @@
       zone: "{{ lookup('env', 'MOLD_ZONE_NAME') }}"
       ip_address: "{{ ac_public_ip.ip_address }}"
       vm: "{{ web_instance_nm }}"
+      api_timeout: "{{ default_timeout }}"
     delegate_to: localhost
 
   - name: Allow port for public ip
@@ -160,6 +166,7 @@
       start_port: "{{ item.port }}"
       end_port: "{{ item.port }}"
       protocol: "{{ item.protocol }}"
+      api_timeout: "{{ default_timeout }}"
     with_items:
         - {port: 8080, protocol: tcp}
         - {port: 22, protocol: tcp}
