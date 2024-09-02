@@ -110,10 +110,9 @@
         api_key: "{{ MOLD_API_KEY }}"
         api_secret: "{{ MOLD_SECRET_KEY }}"
         zone: "{{ MOLD_ZONE_NAME }}"
-        open_firewall: true
         public_port: "{{ item }}"
         private_port: "{{ item }}"
-        api_timeout: 60
+        api_timeout: 70
       with_items:
         - 80
         - 22
