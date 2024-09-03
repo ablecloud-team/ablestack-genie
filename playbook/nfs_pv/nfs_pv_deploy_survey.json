@@ -34,7 +34,7 @@
     "variable": "nfs_storage_vm_temp",
     "min": 0,
     "max": 1024,
-    "default": "CentOS-8-cloudinit",
+    "default": "Rocky-9-cloudinit",
     "choices": "",
     "new_question": false
   },
