@@ -62,7 +62,7 @@
   - name: Public IP 정보 수집
     debug:
       msg: "{{ ac_public_ip.ip_address }}"
-      
+
   - name: Create a static NAT for "{{ ac_public_ip.ip_address }}" to "{{ instance_nm }}"
     cs_staticnat:
       api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
@@ -109,7 +109,7 @@
       controller_host: "http://{{ genie_ip }}:80"
       controller_username: admin
       controller_password: "{{ admin_password.stdout }}"
-      extra_vars: 
+      extra_vars:
         instance_nm: "{{ instance_nm }}"
         uuid: "{{ uuid }}"
     delegate_to: "{{ lookup('env', 'AC_NETWORK_ADDRESS') }}"
@@ -128,11 +128,11 @@
       controller_host: "http://{{ genie_ip }}:80"
       controller_username: admin
       controller_password: "{{ admin_password.stdout }}"
-      extra_vars: 
+      extra_vars:
         instance_nm: "{{ instance_nm }}"
         uuid: "{{ uuid }}"
     delegate_to: "{{ lookup('env', 'AC_NETWORK_ADDRESS') }}"
-    
+
   - name: Genie job 스케줄러 생성
     awx.awx.schedule:
       name: 워드프레스 - 상태체크 - {{ uuid }}
@@ -208,7 +208,7 @@
 
   - name: Install PHP Remi Repository
     yum:
-      name: "http://rpms.remirepo.net/enterprise/remi-release-8.5.rpm"
+      name: "https://rpms.remirepo.net/enterprise/remi-release-9.rpm"
       state: present
 
   - name: Enable PHP Remi Repository
