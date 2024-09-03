@@ -205,12 +205,13 @@
   - name: Add Remi GPG Key
     rpm_key:
       state: present
-      key: https://rpms.remirepo.net/RPM-GPG-KEY-remi2024
+      key: https://rpms.remirepo.net/RPM-GPG-KEY-remi
 
   - name: Install PHP Remi Repository
     yum:
       name: "https://rpms.remirepo.net/enterprise/remi-release-9.rpm"
       state: present
+      disable_gpg_check: true
 
   - name: Enable PHP Remi Repository
     command: dnf module reset php -y
