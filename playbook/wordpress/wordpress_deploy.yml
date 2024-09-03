@@ -256,6 +256,9 @@
       login_password: "{{ mysql_root_password }}"
 
   # WordPress Configuration
+  - name: Install tar Packages
+    yum: name=tar update_cache=yes state=latest
+
   - name: Download and unpack latest WordPress
     unarchive:
       # src: https://wordpress.org/latest.tar.gz
