@@ -204,7 +204,7 @@
 
   - rpm_key:
       state: present
-      key: https://rpms.remirepo.net/RPM-GPG-KEY-remi2018
+      key: https://rpms.remirepo.net/RPM-GPG-KEY-remi
 
   - name: Install PHP Remi Repository
     yum:
