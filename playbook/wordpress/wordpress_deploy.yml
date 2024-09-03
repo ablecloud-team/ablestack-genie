@@ -202,9 +202,10 @@
       group: root
       mode: u=rw,g=r,o=r
 
-  - rpm_key:
+  - name: Add Remi GPG Key
+    rpm_key:
       state: present
-      key: https://rpms.remirepo.net/RPM-GPG-KEY-remi
+      key: https://rpms.remirepo.net/RPM-GPG-KEY-remi2024
 
   - name: Install PHP Remi Repository
     yum:
