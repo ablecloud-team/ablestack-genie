@@ -335,6 +335,9 @@
   - name: Install tar Packages
     yum: name=tar update_cache=yes state=latest
 
+  - name: Install unzip Packages
+    yum: name=unzip update_cache=yes state=latest
+
   - name: Download and Unarchive Tomcat
     ansible.builtin.unarchive:
       # src: "https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.64/bin/apache-tomcat-9.0.64.tar.gz"
