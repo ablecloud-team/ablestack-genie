@@ -454,6 +454,12 @@
   - name: Start nginx service
     systemd: name=nginx state=restarted
 
+  - name: Install tar Packages
+    yum: name=tar update_cache=yes state=latest
+
+  - name: Install unzip Packages
+    yum: name=unzip update_cache=yes state=latest
+
   # css, images file download
   - name: Download css file
     get_url:
