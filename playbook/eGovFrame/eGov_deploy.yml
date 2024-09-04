@@ -327,10 +327,13 @@
   tasks:
   
   # Install Tomcat
-  - name: Install Java 8
+  - name: Install latest available OpenJDK 8 package
     yum:
-      name: java-1.8.0-openjdk-1.8.0.312.b07-2.el8_5.x86_64
+      name: java-1.8.0-openjdk
       state: present
+
+  - name: Install tar Packages
+    yum: name=tar update_cache=yes state=latest
 
   - name: Download and Unarchive Tomcat
     ansible.builtin.unarchive:
