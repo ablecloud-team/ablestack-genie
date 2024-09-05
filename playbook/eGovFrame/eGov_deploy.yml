@@ -324,6 +324,9 @@
   hosts: was_deployVmIp
   gather_facts: no
   vars:
+    ansible_user: root
+    ansible_ssh_pass: Ablecloud1!
+
     tomcat_port: "8080"
     tomcat_protocol: "tcp"
 
@@ -412,6 +415,9 @@
 - name: Deploy Web Server
   hosts: web_deployVmIp
   vars:
+    ansible_user: root
+    ansible_ssh_pass: Ablecloud1!
+
     nginx_port: "8080"
     nginx_protocol: "tcp"
 
