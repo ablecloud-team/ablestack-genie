@@ -11,6 +11,7 @@
     default_inventory_id: '1'
     default_template_id: '7'
     default_organization: '1'
+    default_timeout: 180
   vars_files:
     - /genie/ansible_vars_files.json
   gather_facts: yes
@@ -69,7 +70,7 @@
         api_key: "{{ MOLD_API_KEY }}"
         api_secret: "{{ MOLD_SECRET_KEY }}"
         zone: "{{ MOLD_ZONE_NAME }}"
-        api_timeout: 60
+        api_timeout: "{{ default_timeout }}"
         icmp_code: -1
         icmp_type: -1
         protocol: icmp
@@ -82,7 +83,7 @@
         api_key: "{{ MOLD_API_KEY }}"
         api_secret: "{{ MOLD_SECRET_KEY }}"
         zone: "{{ MOLD_ZONE_NAME }}"
-        api_timeout: 60
+        api_timeout: "{{ default_timeout }}"
         icmp_code: -1
         icmp_type: -1
         protocol: icmp
@@ -94,7 +95,7 @@
         api_key: "{{ MOLD_API_KEY }}"
         api_secret: "{{ MOLD_SECRET_KEY }}"
         zone: "{{ MOLD_ZONE_NAME }}"
-        api_timeout: 60
+        api_timeout: "{{ default_timeout }}"
         type: ingress
         protocol: tcp
         cidrs: 0.0.0.0/0
@@ -112,7 +113,7 @@
         zone: "{{ MOLD_ZONE_NAME }}"
         public_port: "{{ item }}"
         private_port: "{{ item }}"
-        api_timeout: 70
+        api_timeout: "{{ default_timeout }}"
       with_items:
         - 80
         - 22
