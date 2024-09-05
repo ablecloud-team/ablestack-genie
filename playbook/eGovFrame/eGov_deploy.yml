@@ -6,6 +6,8 @@
   vars:
     base_path: "genie"
     genie_ip: "localhost"
+    ansible_user: root
+    ansible_ssh_pass: Ablecloud1!
     default_timeout: 180
   tasks:
 
@@ -247,6 +249,9 @@
   hosts: db_deployVmIp
   gather_facts: no
   vars:
+    ansible_user: root
+    ansible_ssh_pass: Ablecloud1!
+
     db_port: "3306"
     db_protocol: "tcp"
 
