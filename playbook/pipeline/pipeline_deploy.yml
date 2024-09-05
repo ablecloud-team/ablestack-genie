@@ -7,7 +7,7 @@
     # instance_nm: "{{ gitea_instance_name }}-{{ uuid }}"
     base_path: "genie"
     genie_ip: "localhost"
-    default_timeout: 70
+    default_timeout: 180
   tasks:
 
   - name: debug uuid stdout
