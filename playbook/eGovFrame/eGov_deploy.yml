@@ -97,9 +97,9 @@
       service_offering: "{{ instance_computeoffer }}"
       ssh_key: "{{ lookup('env', 'MOLD_SSH_KEYPAIR') }}"
       user_data: |
-          #cloud-config
-          disable_root: false
-          ssh_pwauth: true
+        #cloud-config
+        disable_root: false
+        ssh_pwauth: true
       networks: "{{ lookup('env', 'AC_NETWORK_NAME') }}"
       api_timeout: "{{ default_timeout }}"
     register: web_vm
