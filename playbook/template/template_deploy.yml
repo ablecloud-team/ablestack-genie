@@ -28,7 +28,7 @@
       controller_password: "{{ admin_password.stdout }}"
       extra_vars: 
         instance_name: "wordpress-deploy-vm"
-        instance_temp: "CentOS-8-cloudinit"
+        instance_temp: "Rocky-9-cloudinit"
         instance_computeoffer: "2C-4GB-RBD-HA"
 
   # - name: Create wordpress state check playbook
@@ -83,7 +83,7 @@
       extra_vars: 
         # uuid: "{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=5') }}"
         instance_name: "nextcloud-deploy-vm"
-        instance_temp: "CentOS-8-cloudinit"
+        instance_temp: "Rocky-9-cloudinit"
         instance_computeoffer: "2C-4GB-RBD-HA"
 
   # - name: Create nextcloud state check playbook
@@ -136,7 +136,7 @@
         db_instance_name: "db-deploy-vm"
         was_instance_name: "was-deploy-vm"
         web_instance_name: "web-deploy-vm"
-        instance_temp: "CentOS-8-cloudinit"
+        instance_temp: "Rocky-9-cloudinit"
         instance_computeoffer: "2C-4GB-RBD-HA"
 
   # - name: Create eGovFrame state check playbook

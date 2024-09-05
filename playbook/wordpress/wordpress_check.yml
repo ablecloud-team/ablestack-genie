@@ -4,6 +4,7 @@
   gather_facts: no
   vars:
     service_group: "Wordpress-{{ uuid }}"
+    default_timeout: 70
   tasks:
 
   ### Info VirtualMachine ###
@@ -13,6 +14,7 @@
       api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
       api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
       name: "{{ instance_nm }}"
+      api_timeout: "{{ default_timeout }}"
     delegate_to: localhost
     register: vm
 

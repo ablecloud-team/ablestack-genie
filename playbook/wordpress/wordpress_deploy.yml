@@ -6,6 +6,7 @@
   vars:
     base_path: "genie"
     genie_ip: "localhost"
+    default_timeout: 70
   tasks:
 
   - name: uuid 생성
@@ -30,6 +31,7 @@
         disable_root: false
         ssh_pwauth: true
       networks: "{{ lookup('env', 'AC_NETWORK_NAME') }}"
+      api_timeout: "{{ default_timeout }}"
     register: vm
 
   - name: 생성한 가상머신이 부팅이 완료될 때까지 대기
@@ -54,12 +56,13 @@
       api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
       zone: "{{ lookup('env', 'MOLD_ZONE_NAME') }}"
       network: "{{ lookup('env', 'AC_NETWORK_NAME') }}"
+      api_timeout: "{{ default_timeout }}"
     register: ac_public_ip
 
   - name: Public IP 정보 수집
     debug:
       msg: "{{ ac_public_ip.ip_address }}"
-      
+
   - name: Create a static NAT for "{{ ac_public_ip.ip_address }}" to "{{ instance_nm }}"
     cs_staticnat:
       api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
@@ -68,6 +71,7 @@
       zone: "{{ lookup('env', 'MOLD_ZONE_NAME') }}"
       ip_address: "{{ ac_public_ip.ip_address }}"
       vm: "{{ instance_nm }}"
+      api_timeout: "{{ default_timeout }}"
 
   - name: Allow port for public ip
     cs_firewall:
@@ -79,6 +83,7 @@
       start_port: "{{ item.port }}"
       end_port: "{{ item.port }}"
       protocol: "{{ item.protocol }}"
+      api_timeout: "{{ default_timeout }}"
     with_items:
         - {port: 80, protocol: tcp}
         - {port: 22, protocol: tcp}
@@ -104,7 +109,7 @@
       controller_host: "http://{{ genie_ip }}:80"
       controller_username: admin
       controller_password: "{{ admin_password.stdout }}"
-      extra_vars: 
+      extra_vars:
         instance_nm: "{{ instance_nm }}"
         uuid: "{{ uuid }}"
     delegate_to: "{{ lookup('env', 'AC_NETWORK_ADDRESS') }}"
@@ -123,11 +128,11 @@
       controller_host: "http://{{ genie_ip }}:80"
       controller_username: admin
       controller_password: "{{ admin_password.stdout }}"
-      extra_vars: 
+      extra_vars:
         instance_nm: "{{ instance_nm }}"
         uuid: "{{ uuid }}"
     delegate_to: "{{ lookup('env', 'AC_NETWORK_ADDRESS') }}"
-    
+
   - name: Genie job 스케줄러 생성
     awx.awx.schedule:
       name: 워드프레스 - 상태체크 - {{ uuid }}
@@ -197,14 +202,16 @@
       group: root
       mode: u=rw,g=r,o=r
 
-  - rpm_key:
+  - name: Add Remi GPG Key
+    rpm_key:
       state: present
-      key: https://rpms.remirepo.net/RPM-GPG-KEY-remi2018
+      key: https://rpms.remirepo.net/RPM-GPG-KEY-remi
 
   - name: Install PHP Remi Repository
     yum:
-      name: "http://rpms.remirepo.net/enterprise/remi-release-8.5.rpm"
+      name: "https://rpms.remirepo.net/enterprise/remi-release-9.rpm"
       state: present
+      disable_gpg_check: true
 
   - name: Enable PHP Remi Repository
     command: dnf module reset php -y
@@ -249,6 +256,9 @@
       login_password: "{{ mysql_root_password }}"
 
   # WordPress Configuration
+  - name: Install tar Packages
+    yum: name=tar update_cache=yes state=latest
+
   - name: Download and unpack latest WordPress
     unarchive:
       # src: https://wordpress.org/latest.tar.gz
