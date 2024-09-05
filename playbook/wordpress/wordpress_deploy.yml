@@ -30,8 +30,6 @@
         #cloud-config
         disable_root: false
         ssh_pwauth: true
-        ssh_authorized_keys:
-          - "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
       networks: "{{ lookup('env', 'AC_NETWORK_NAME') }}"
       api_timeout: "{{ default_timeout }}"
     register: vm
