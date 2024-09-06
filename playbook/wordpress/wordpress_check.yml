@@ -4,7 +4,7 @@
   gather_facts: no
   vars:
     service_group: "Wordpress-{{ uuid }}"
-    default_timeout: 70
+    default_timeout: 180
   tasks:
 
   ### Info VirtualMachine ###

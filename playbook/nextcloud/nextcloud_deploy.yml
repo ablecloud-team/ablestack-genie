@@ -6,7 +6,7 @@
   vars:
     base_path: "genie"
     genie_ip: "localhost"
-    default_timeout: 70
+    default_timeout: 180
   tasks:
 
   - name: uuid 생성
@@ -27,9 +27,9 @@
       service_offering: "{{ instance_computeoffer }}"
       ssh_key: "{{ lookup('env', 'MOLD_SSH_KEYPAIR') }}"
       user_data: |
-          #cloud-config
-          disable_root: false
-          ssh_pwauth: true
+        #cloud-config
+        disable_root: false
+        ssh_pwauth: true
       networks: "{{ lookup('env', 'AC_NETWORK_NAME') }}"
       api_timeout: "{{ default_timeout }}"
     register: vm
@@ -170,6 +170,8 @@
   hosts: deployVmIp
   gather_facts: no
   vars:
+    ansible_user: root
+    ansible_ssh_pass: Ablecloud1!
     httpd_packages:
       - "httpd"
       - "mod_ssl"

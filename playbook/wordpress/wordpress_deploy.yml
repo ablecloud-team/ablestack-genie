@@ -6,7 +6,7 @@
   vars:
     base_path: "genie"
     genie_ip: "localhost"
-    default_timeout: 70
+    default_timeout: 180
   tasks:
 
   - name: uuid 생성
