@@ -6,6 +6,8 @@
   vars:
     base_path: "genie"
     genie_ip: "localhost"
+    ansible_user: root
+    ansible_ssh_pass: Ablecloud1!
     default_timeout: 180
   tasks:
 
@@ -87,6 +89,11 @@
     with_items:
         - {port: 80, protocol: tcp}
         - {port: 22, protocol: tcp}
+
+  - name: Copy SSH key using ssh-copy-id
+    command: ssh-copy-id -i root@"{{ ac_public_ip.ip_address }}"
+    responses:
+      'password:': "{{ ansible_ssh_pass}} "
 
   #=============================================================
 
@@ -178,15 +185,6 @@
     - http_port: 80
 
   tasks:
-  - name: Read public key from file
-    slurp:
-      src: /root/.ssh/id_rsa.pub
-    register: key_file
-
-  - name: Add public key to authorized_keys
-    lineinfile:
-      path: /root/.ssh/authorized_keys
-      line: "{{ key_file.content | b64decode }}"
 
   - name: Install HTTP Packages
     yum: name=httpd update_cache=yes state=latest
