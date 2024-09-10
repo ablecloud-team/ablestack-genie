@@ -88,8 +88,10 @@
         - {port: 80, protocol: tcp}
         - {port: 22, protocol: tcp}
 
-  - name: Copy SSH key using ssh-copy-id
-    command: ssh-copy-id -i root@"{{ ac_public_ip.ip_address }}"
+  - name: Add generated public key to authenticated keys
+    lineinfile:
+      dest: /root/.ssh/authorized_keys
+      line: "{{ lookup('env', 'AC_PUB_KEY') }}"
 
   #=============================================================
 
