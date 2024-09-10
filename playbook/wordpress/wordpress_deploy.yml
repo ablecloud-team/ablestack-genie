@@ -30,6 +30,7 @@
         #cloud-config
         disable_root: false
         ssh_pwauth: true
+        hostname: "{{ instance_nm }}"
       networks: "{{ lookup('env', 'AC_NETWORK_NAME') }}"
       api_timeout: "{{ default_timeout }}"
     register: vm
@@ -87,6 +88,18 @@
     with_items:
         - {port: 80, protocol: tcp}
         - {port: 22, protocol: tcp}
+
+  - name: get known_hosts fingerprint for ubuntu nodes
+    command: /usr/bin/ssh-keyscan -t ecdsa deployVmIp
+    register: keyscan
+
+  - name: add ansible_host to known_hosts
+    lineinfile:
+      name=~/.ssh/known_hosts
+      create=yes
+      line={{ item }}
+    with_items:
+      - "{{ keyscan.stdout_lines }}"
 
   #=============================================================
 
