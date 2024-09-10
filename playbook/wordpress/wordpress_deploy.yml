@@ -11,7 +11,7 @@
 
   - name: Read SSH public key
     ansible.builtin.slurp:
-      src: ~/.ssh/id_rsa.pub
+      src: /root/.ssh/id_rsa.pub
     register: ssh_pub_key
 
   - name: Convert SSH public key to string
