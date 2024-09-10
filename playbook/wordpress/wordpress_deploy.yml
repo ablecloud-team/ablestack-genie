@@ -88,11 +88,6 @@
         - {port: 80, protocol: tcp}
         - {port: 22, protocol: tcp}
 
-  - name: Add generated public key to authenticated keys
-    lineinfile:
-      dest: /root/.ssh/authorized_keys
-      line: "{{ lookup('env', 'AC_PUB_KEY') }}"
-
   #=============================================================
 
   - name: AWX 초기 관리자 패스워드 추출
@@ -183,6 +178,11 @@
     - http_port: 80
 
   tasks:
+
+  - name: Add generated public key to authenticated keys
+    lineinfile:
+      dest: /root/.ssh/authorized_keys
+      line: "{{ lookup('env', 'AC_PUB_KEY') }}"
 
   - name: Install HTTP Packages
     yum: name=httpd update_cache=yes state=latest
