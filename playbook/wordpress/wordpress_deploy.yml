@@ -9,6 +9,15 @@
     default_timeout: 180
   tasks:
 
+  - name: Read SSH public key
+    ansible.builtin.slurp:
+      src: ~/.ssh/id_rsa.pub
+    register: ssh_pub_key
+
+  - name: Convert SSH public key to string
+    set_fact:
+      public_key: "{{ ssh_pub_key['content'] | b64decode }}"
+
   - name: uuid 생성
     set_fact:
       uuid: "{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=5') }}"
@@ -30,7 +39,7 @@
         #cloud-config
         disable_root: false
         ssh_pwauth: true
-        ssh_authorized_keys: "{{ lookup('env', 'MOLD_SSH_KEYPAIR') }}"
+        ssh_authorized_keys: "{{ public_key }}"
       networks: "{{ lookup('env', 'AC_NETWORK_NAME') }}"
       api_timeout: "{{ default_timeout }}"
     register: vm
