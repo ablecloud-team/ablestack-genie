@@ -226,8 +226,10 @@
       state: present
       disable_gpg_check: true
 
-  - name: Enable PHP Remi Repository
+  - name: Reset PHP module
     command: dnf module reset php -y
+
+  - name: Enable PHP Remi Repository (PHP 7.4)
     command: dnf module enable php:remi-7.4 -y
 
   - name: Install PHP Extensions
