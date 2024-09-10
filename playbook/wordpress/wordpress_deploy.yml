@@ -30,7 +30,8 @@
         #cloud-config
         disable_root: false
         ssh_pwauth: true
-        hostname: "{{ instance_nm }}"
+        manage_etc_hosts: true
+        hostname: {{ instance_nm }}
       networks: "{{ lookup('env', 'AC_NETWORK_NAME') }}"
       api_timeout: "{{ default_timeout }}"
     register: vm
@@ -90,7 +91,7 @@
         - {port: 22, protocol: tcp}
 
   - name: get known_hosts fingerprint for nodes
-    command: /usr/bin/ssh-keyscan -t ecdsa "{{ vm.default_ip }}"
+    command: /usr/bin/ssh-keyscan -t ecdsa "{{ ac_public_ip.ip_address }}"
     register: keyscan
 
   - name: add ansible_host to known_hosts
