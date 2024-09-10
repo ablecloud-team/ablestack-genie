@@ -6,8 +6,6 @@
   vars:
     base_path: "genie"
     genie_ip: "localhost"
-    ansible_user: root
-    ansible_ssh_pass: Ablecloud1!
     default_timeout: 180
   tasks:
 
@@ -92,8 +90,6 @@
 
   - name: Copy SSH key using ssh-copy-id
     command: ssh-copy-id -i root@"{{ ac_public_ip.ip_address }}"
-    responses:
-      'password:': "{{ ansible_ssh_pass}} "
 
   #=============================================================
 
