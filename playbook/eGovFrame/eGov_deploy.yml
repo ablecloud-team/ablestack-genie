@@ -259,6 +259,10 @@
     mysql_root_password: Ablecloud1!
     mysql_db: cloud
   tasks:
+    - name: Add generated public key to authenticated keys
+      lineinfile:
+        dest: /root/.ssh/authorized_keys
+        line: "{{ lookup('env', 'AC_PUB_KEY') }}"
 
     # Install MySQL
     - name: Install MySQL Packages
