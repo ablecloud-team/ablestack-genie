@@ -337,7 +337,11 @@
     # Register db server ip in /etc/hosts for context-datasource.xml
     # db_instance_nm: "{{ db_instance_name }}-{{ uuid }}"
   tasks:
-  
+  - name: Add generated public key to authenticated keys
+    lineinfile:
+      dest: /root/.ssh/authorized_keys
+      line: "{{ lookup('env', 'AC_PUB_KEY') }}"
+
   # Install Tomcat
   - name: Install Java 8
     yum:
@@ -430,8 +434,12 @@
     
   gather_facts: no
   tasks:
+  - name: Add generated public key to authenticated keys
+    lineinfile:
+      dest: /root/.ssh/authorized_keys
+      line: "{{ lookup('env', 'AC_PUB_KEY') }}"
 
-  # Install nginx
+    # Install nginx
   - name: Install nginx
     ansible.builtin.package:
       name: nginx
