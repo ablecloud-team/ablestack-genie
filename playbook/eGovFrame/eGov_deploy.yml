@@ -236,7 +236,7 @@
       name: 전자정부프레임워크 웹서비스 - 상태체크 - {{ uuid }}
       state: present
       unified_job_template: 전자정부프레임워크 웹서비스 - 상태체크 - {{ uuid }}
-      rrule: "DTSTART;TZID=Asia/Seoul:20220101T120000 RRULE:FREQ=MINUTELY;INTERVAL=1"
+      rrule: "DTSTART;TZID=Asia/Seoul:20220101T120000 RRULE:FREQ=MINUTELY;INTERVAL=5"
       controller_host: "http://{{ genie_ip }}:80"
       controller_username: admin
       controller_password: "{{ admin_password.stdout }}"
@@ -259,6 +259,10 @@
     mysql_root_password: Ablecloud1!
     mysql_db: cloud
   tasks:
+    - name: Add generated public key to authenticated keys
+      lineinfile:
+        dest: /root/.ssh/authorized_keys
+        line: "{{ lookup('env', 'AC_PUB_KEY') }}"
 
     # Install MySQL
     - name: Install MySQL Packages
@@ -333,7 +337,11 @@
     # Register db server ip in /etc/hosts for context-datasource.xml
     # db_instance_nm: "{{ db_instance_name }}-{{ uuid }}"
   tasks:
-  
+  - name: Add generated public key to authenticated keys
+    lineinfile:
+      dest: /root/.ssh/authorized_keys
+      line: "{{ lookup('env', 'AC_PUB_KEY') }}"
+
   # Install Tomcat
   - name: Install Java 8
     yum:
@@ -426,8 +434,12 @@
     
   gather_facts: no
   tasks:
+  - name: Add generated public key to authenticated keys
+    lineinfile:
+      dest: /root/.ssh/authorized_keys
+      line: "{{ lookup('env', 'AC_PUB_KEY') }}"
 
-  # Install nginx
+    # Install nginx
   - name: Install nginx
     ansible.builtin.package:
       name: nginx

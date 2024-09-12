@@ -157,7 +157,7 @@
       name: 넥스트클라우드 - 상태체크 - {{ uuid }}
       state: present
       unified_job_template: 넥스트클라우드 - 상태체크 - {{ uuid }}
-      rrule: "DTSTART;TZID=Asia/Seoul:20220101T120000 RRULE:FREQ=MINUTELY;INTERVAL=1"
+      rrule: "DTSTART;TZID=Asia/Seoul:20220101T120000 RRULE:FREQ=MINUTELY;INTERVAL=2"
       controller_host: "http://{{ genie_ip }}:80"
       controller_username: admin
       controller_password: "{{ admin_password.stdout }}"
@@ -204,7 +204,12 @@
     nextcloud_admin_pass: "password"
     nextcloud_data_dir: "/var/www/html/nextcloud/data"
   tasks:
-  
+
+    - name: Add generated public key to authenticated keys
+      lineinfile:
+        dest: /root/.ssh/authorized_keys
+        line: "{{ lookup('env', 'AC_PUB_KEY') }}"
+
     # Install Httpd
     - name: Install httpd
       ansible.builtin.package:
