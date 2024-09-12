@@ -138,7 +138,7 @@
       name: 워드프레스 - 상태체크 - {{ uuid }}
       state: present
       unified_job_template: 워드프레스 - 상태체크 - {{ uuid }}
-      rrule: "DTSTART;TZID=Asia/Seoul:20220101T120000 RRULE:FREQ=MINUTELY;INTERVAL=1"
+      rrule: "DTSTART;TZID=Asia/Seoul:20220101T120000 RRULE:FREQ=MINUTELY;INTERVAL=2"
       controller_host: "http://{{ genie_ip }}:80"
       controller_username: admin
       controller_password: "{{ admin_password.stdout }}"
