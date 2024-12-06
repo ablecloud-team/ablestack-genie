@@ -138,7 +138,7 @@
       name: 워드프레스 - 상태체크 - {{ uuid }}
       state: present
       unified_job_template: 워드프레스 - 상태체크 - {{ uuid }}
-      rrule: "DTSTART;TZID=Asia/Seoul:20220101T120000 RRULE:FREQ=MINUTELY;INTERVAL=1"
+      rrule: "DTSTART;TZID=Asia/Seoul:20220101T120000 RRULE:FREQ=MINUTELY;INTERVAL=2"
       controller_host: "http://{{ genie_ip }}:80"
       controller_username: admin
       controller_password: "{{ admin_password.stdout }}"
@@ -179,6 +179,11 @@
 
   tasks:
 
+  - name: Add generated public key to authenticated keys
+    lineinfile:
+      dest: /root/.ssh/authorized_keys
+      line: "{{ lookup('env', 'AC_PUB_KEY') }}"
+
   - name: Install HTTP Packages
     yum: name=httpd update_cache=yes state=latest
 
@@ -213,8 +218,10 @@
       state: present
       disable_gpg_check: true
 
-  - name: Enable PHP Remi Repository
+  - name: Reset PHP module
     command: dnf module reset php -y
+
+  - name: Enable PHP Remi Repository (PHP 7.4)
     command: dnf module enable php:remi-7.4 -y
 
   - name: Install PHP Extensions

@@ -145,6 +145,7 @@
             AC_INSTANCE_NAME: "{{ AC_INSTANCE_NAME }}"
             AC_NETWORK_NAME: "{{ AC_NETWORK_NAME }}"
             AC_NETWORK_ADDRESS: "{{ ansible_default_ipv4.address }}"
+            AC_PUB_KEY: "{{ id_pub.stdout }}"
             MOLD_DEFAULT_URL: "{{ MOLD_DEFAULT_URL }}"
             MOLD_DEFAULT_PORT: "{{ MOLD_DEFAULT_PORT }}"
             MOLD_DEFAULT_PROTOCOL: "{{ MOLD_DEFAULT_PROTOCOL[:-3] }}"
