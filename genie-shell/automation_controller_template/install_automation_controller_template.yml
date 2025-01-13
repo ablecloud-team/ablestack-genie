@@ -20,7 +20,7 @@
     docker_cli_verion: '1:20.10.14-3.el8'
     docker_containerd_io_verion: '1.5.11-3.1.el8'
 
-    # genie_dashboard_port: '80'
+    # genie_dashboard_port: '8075'
     # genie_db_postgres_port: '5432'
     kubernetes_dashboard_port: '8001'
 
@@ -97,7 +97,7 @@
 
     - name: Firewall Rules 설정
       shell: | 
-        firewall-cmd --permanent --zone=public --add-port=80/tcp          # genie dashboard
+        firewall-cmd --permanent --zone=public --add-port=8075/tcp          # genie dashboard
         firewall-cmd --permanent --zone=public --add-port=5432/tcp        # postgres
         firewall-cmd --permanent --zone=public --add-port={{ kubernetes_dashboard_port }}/tcp     # kubernetes 
         firewall-cmd --permanent --zone=public --add-service=http
@@ -264,7 +264,7 @@
     - shell: kubectl proxy --address='0.0.0.0' --disable-filter=true  &> /dev/null &
     
     - name: Genie Dashboard 응답 대기 중 (약 2분 소요)
-      shell: curl -o /dev/null -s -w "%{http_code}\n" http://{{ genie_ip }}:80
+      shell: curl -o /dev/null -s -w "%{http_code}\n" http://{{ genie_ip }}:8075
       register: genie_return_code
       until: genie_return_code.stdout == "200"
       retries: 60
@@ -279,7 +279,7 @@
         password: "{{ genie_pass }}"
         superuser: yes
         state: present
-        controller_host: "http://{{ genie_ip }}:80"
+        controller_host: "http://{{ genie_ip }}:8075"
         controller_username: admin
         controller_password: "{{ admin_password.stdout }}"
       register: user_genie
