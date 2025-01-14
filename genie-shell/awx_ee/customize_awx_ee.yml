@@ -23,7 +23,7 @@
 
     http_host: 'html'
     http_conf: 'wordpress'
-    http_port: '8075'
+    http_port: '80'
   gather_facts: no
   tasks:
     - name: 도커 설치 1/4 # podman 삭제

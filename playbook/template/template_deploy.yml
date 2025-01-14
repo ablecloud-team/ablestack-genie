@@ -23,7 +23,7 @@
       credentials:
         - "Automation Controller Credential"
       state: "present"
-      controller_host: "http://{{ genie_ip }}:8075"
+      controller_host: "http://{{ genie_ip }}:80"
       controller_username: admin
       controller_password: "{{ admin_password.stdout }}"
       extra_vars: 
@@ -42,7 +42,7 @@
   #     credentials:
   #       - "Automation Controller Credential"
   #     state: "present"
-  #     controller_host: "http://{{ genie_ip }}:8075"
+  #     controller_host: "http://{{ genie_ip }}:80"
   #     controller_username: admin
   #     controller_password: "{{ admin_password.stdout }}"
 
@@ -57,7 +57,7 @@
   #     credentials:
   #       - "Automation Controller Credential"
   #     state: "present"
-  #     controller_host: "http://{{ genie_ip }}:8075"
+  #     controller_host: "http://{{ genie_ip }}:80"
   #     controller_username: admin
   #     controller_password: "{{ admin_password.stdout }}"
       
@@ -77,7 +77,7 @@
       credentials:
         - "Automation Controller Credential"
       state: "present"
-      controller_host: "http://{{ genie_ip }}:8075"
+      controller_host: "http://{{ genie_ip }}:80"
       controller_username: admin
       controller_password: "{{ admin_password.stdout }}"
       extra_vars: 
@@ -97,7 +97,7 @@
   #     credentials:
   #       - "Automation Controller Credential"
   #     state: "present"
-  #     controller_host: "http://{{ genie_ip }}:8075"
+  #     controller_host: "http://{{ genie_ip }}:80"
   #     controller_username: admin
   #     controller_password: "{{ admin_password.stdout }}"
 
@@ -112,7 +112,7 @@
   #     credentials:
   #       - "Automation Controller Credential"
   #     state: "present"
-  #     controller_host: "http://{{ genie_ip }}:8075"
+  #     controller_host: "http://{{ genie_ip }}:80"
   #     controller_username: admin
   #     controller_password: "{{ admin_password.stdout }}"
 
@@ -128,7 +128,7 @@
       credentials:
         - "Automation Controller Credential"
       state: "present"
-      controller_host: "http://{{ genie_ip }}:8075"
+      controller_host: "http://{{ genie_ip }}:80"
       controller_username: admin
       controller_password: "{{ admin_password.stdout }}"
       extra_vars: 
@@ -150,7 +150,7 @@
   #     credentials:
   #       - "Automation Controller Credential"
   #     state: "present"
-  #     controller_host: "http://{{ genie_ip }}:8075"
+  #     controller_host: "http://{{ genie_ip }}:80"
   #     controller_username: admin
   #     controller_password: "{{ admin_password.stdout }}"
 
@@ -165,7 +165,7 @@
   #     credentials:
   #       - "Automation Controller Credential"
   #     state: "present"
-  #     controller_host: "http://{{ genie_ip }}:8075"
+  #     controller_host: "http://{{ genie_ip }}:80"
   #     controller_username: admin
   #     controller_password: "{{ admin_password.stdout }}"    
 
@@ -181,7 +181,7 @@
 #      credentials:
 #        - "Automation Controller Credential"
 #      state: "present"
-#      controller_host: "http://{{ genie_ip }}:8075"
+#      controller_host: "http://{{ genie_ip }}:80"
 #      controller_username: admin
 #      controller_password: "{{ admin_password.stdout }}"
 #      extra_vars:
@@ -204,7 +204,7 @@
 #      credentials:
 #        - "Automation Controller Credential"
 #      state: "present"
-#      controller_host: "http://{{ genie_ip }}:8075"
+#      controller_host: "http://{{ genie_ip }}:80"
 #      controller_username: admin
 #      controller_password: "{{ admin_password.stdout }}"
 #      survey_enabled: yes

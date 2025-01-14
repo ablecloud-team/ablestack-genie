@@ -89,7 +89,7 @@
       state: absent
       unified_job_template: 전자정부프레임워크 웹서비스 - 상태체크 - {{ uuid }}
       # rrule: "DTSTART;TZID=Asia/Seoul:20220101T120000 RRULE:FREQ=MINUTELY;INTERVAL=1"
-      controller_host: "http://{{ genie_ip }}:8075"
+      controller_host: "http://{{ genie_ip }}:80"
       controller_username: admin
       controller_password: "{{ admin_password.stdout }}"
 
@@ -97,6 +97,6 @@
     awx.awx.job_template:
       name: 전자정부프레임워크 웹서비스 - 상태체크 - {{ uuid }}
       state: "absent"
-      controller_host: "http://{{ genie_ip }}:8075"
+      controller_host: "http://{{ genie_ip }}:80"
       controller_username: admin
       controller_password: "{{ admin_password.stdout }}"

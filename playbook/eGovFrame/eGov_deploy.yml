@@ -193,7 +193,7 @@
       credentials:
         - "Automation Controller Credential"
       state: "present"
-      controller_host: "http://{{ genie_ip }}:8075"
+      controller_host: "http://{{ genie_ip }}:80"
       controller_username: admin
       controller_password: "{{ admin_password.stdout }}"
       extra_vars: 
@@ -214,7 +214,7 @@
       credentials:
         - "Automation Controller Credential"
       state: "present"
-      controller_host: "http://{{ genie_ip }}:8075"
+      controller_host: "http://{{ genie_ip }}:80"
       controller_username: admin
       controller_password: "{{ admin_password.stdout }}"
       extra_vars: 
@@ -227,7 +227,7 @@
   # - name: 상태체크 job 실행
   #   awx.awx.job_launch:
   #     job_template: eGov_check
-  #     controller_host: "http://{{ genie_ip }}:8075"
+  #     controller_host: "http://{{ genie_ip }}:80"
   #     controller_username: admin
   #     controller_password: "{{ admin_password.stdout }}"
 
@@ -237,7 +237,7 @@
       state: present
       unified_job_template: 전자정부프레임워크 웹서비스 - 상태체크 - {{ uuid }}
       rrule: "DTSTART;TZID=Asia/Seoul:20220101T120000 RRULE:FREQ=MINUTELY;INTERVAL=5"
-      controller_host: "http://{{ genie_ip }}:8075"
+      controller_host: "http://{{ genie_ip }}:80"
       controller_username: admin
       controller_password: "{{ admin_password.stdout }}"
     delegate_to: "{{ lookup('env', 'AC_NETWORK_ADDRESS') }}"
