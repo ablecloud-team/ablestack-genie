@@ -85,7 +85,7 @@
       protocol: "{{ item.protocol }}"
       api_timeout: "{{ default_timeout }}"
     with_items:
-        - {port: 8075, protocol: tcp}
+        - {port: 80, protocol: tcp}
         - {port: 22, protocol: tcp}
 
   #=============================================================
@@ -106,7 +106,7 @@
       credentials:
         - "Automation Controller Credential"
       state: "present"
-      controller_host: "http://{{ genie_ip }}:8075"
+      controller_host: "http://{{ genie_ip }}:80"
       controller_username: admin
       controller_password: "{{ admin_password.stdout }}"
       extra_vars:
@@ -125,7 +125,7 @@
       credentials:
         - "Automation Controller Credential"
       state: "present"
-      controller_host: "http://{{ genie_ip }}:8075"
+      controller_host: "http://{{ genie_ip }}:80"
       controller_username: admin
       controller_password: "{{ admin_password.stdout }}"
       extra_vars:
@@ -139,7 +139,7 @@
       state: present
       unified_job_template: 워드프레스 - 상태체크 - {{ uuid }}
       rrule: "DTSTART;TZID=Asia/Seoul:20220101T120000 RRULE:FREQ=MINUTELY;INTERVAL=2"
-      controller_host: "http://{{ genie_ip }}:8075"
+      controller_host: "http://{{ genie_ip }}:80"
       controller_username: admin
       controller_password: "{{ admin_password.stdout }}"
     delegate_to: "{{ lookup('env', 'AC_NETWORK_ADDRESS') }}"
@@ -175,7 +175,7 @@
     #HTTP Settings
     - http_host: html
     - http_conf: wordpress
-    - http_port: 8075
+    - http_port: 80
 
   tasks:
 

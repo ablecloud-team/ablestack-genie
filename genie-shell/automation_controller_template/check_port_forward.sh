@@ -2,7 +2,7 @@
 
 while [ 1 ]
 do
-    STATUS=$(curl -o /dev/null -w "%{http_code}" "http://localhost:8075")
+    STATUS=$(curl -o /dev/null -w "%{http_code}" "http://localhost:80")
     pid_dashboard=`ps -ef | grep "kubectl port-forward svc/awx-service" | grep -v 'grep' | awk '{print $2}'`
     pid_postgres=`ps -ef | grep "kubectl port-forward svc/awx-postgres" | grep -v 'grep' | awk '{print $2}'`
     pid_proxy=`ps -ef | grep "kubectl proxy" | grep -v 'grep' | awk '{print $2}'`
@@ -14,7 +14,7 @@ do
 
     if [ -z $pid_dashboard ]
     then
-        nohup kubectl port-forward svc/awx-service -n awx --address 0.0.0.0 8075:8075 &> /dev/null &
+        nohup kubectl port-forward svc/awx-service -n awx --address 0.0.0.0 80:80 &> /dev/null &
     fi
 
     if [ -z $pid_postgres ]

@@ -95,7 +95,7 @@
       protocol: "{{ item.protocol }}"
       api_timeout: "{{ default_timeout }}"
     with_items:
-        - {port: 8075, protocol: tcp}
+        - {port: 80, protocol: tcp}
         - {port: 22, protocol: tcp}
     delegate_to: localhost
 
@@ -117,7 +117,7 @@
       credentials:
         - "Automation Controller Credential"
       state: "present"
-      controller_host: "http://{{ genie_ip }}:8075"
+      controller_host: "http://{{ genie_ip }}:80"
       controller_username: admin
       controller_password: "{{ admin_password.stdout }}"
       extra_vars: 
@@ -136,7 +136,7 @@
       credentials:
         - "Automation Controller Credential"
       state: "present"
-      controller_host: "http://{{ genie_ip }}:8075"
+      controller_host: "http://{{ genie_ip }}:80"
       controller_username: admin
       controller_password: "{{ admin_password.stdout }}"
       extra_vars: 
@@ -147,7 +147,7 @@
   # - name: 상태체크 job 실행
   #   awx.awx.job_launch:
   #     job_template: 넥스트클라우드 - 상태체크 - {{ uuid }}
-  #     controller_host: "http://{{ genie_ip }}:8075"
+  #     controller_host: "http://{{ genie_ip }}:80"
   #     controller_username: admin
   #     controller_password: "{{ admin_password.stdout }}"
   #   delegate_to: "{{ lookup('env', 'AC_NETWORK_ADDRESS') }}"
@@ -158,7 +158,7 @@
       state: present
       unified_job_template: 넥스트클라우드 - 상태체크 - {{ uuid }}
       rrule: "DTSTART;TZID=Asia/Seoul:20220101T120000 RRULE:FREQ=MINUTELY;INTERVAL=2"
-      controller_host: "http://{{ genie_ip }}:8075"
+      controller_host: "http://{{ genie_ip }}:80"
       controller_username: admin
       controller_password: "{{ admin_password.stdout }}"
     delegate_to: "{{ lookup('env', 'AC_NETWORK_ADDRESS') }}"
