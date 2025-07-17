@@ -196,7 +196,7 @@
       - "python3-PyMySQL"
     mariadb_root_pass: "password"
     # nextcloud_code: "https://download.nextcloud.com/server/releases/nextcloud-20.0.9.zip"
-    nextcloud_code: "https://images.ablecloud.io/genie/nextcloud/nextcloud-25.0.13.zip"
+    nextcloud_code: "http://images.ablecloud.io/Genie/nextcloud/nextcloud-25.0.13.zip"
     nextcloud_db_name: "nextcloud"
     nextcloud_db_user: "nextcloud"
     nextcloud_db_pass: "password"
