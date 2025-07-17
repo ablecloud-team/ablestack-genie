@@ -302,7 +302,7 @@
 
     - name: Download sql file
       get_url:
-        url: "https://images.ablecloud.io/genie/eGovFrame/db.sql"
+        url: "http://images.ablecloud.io/Genie/eGovFrame/db.sql"
         dest: /tmp/
 
     - name: Restore database
@@ -357,7 +357,7 @@
   - name: Download and Unarchive Tomcat
     ansible.builtin.unarchive:
       # src: "https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.64/bin/apache-tomcat-9.0.64.tar.gz"
-      src: "https://images.ablecloud.io/genie/eGovFrame/apache-tomcat-9.0.65.tar.gz"
+      src: "http://images.ablecloud.io/Genie/eGovFrame/apache-tomcat-9.0.65.tar.gz"
       dest: /usr/local
       remote_src: yes
       # extra_opts: "--strip-components=1"
@@ -365,7 +365,7 @@
 
   - name: Download Tomcat service file
     get_url:
-      url: "https://images.ablecloud.io/genie/eGovFrame/tomcat.service"
+      url: "http://images.ablecloud.io/Genie/eGovFrame/tomcat.service"
       dest: "/etc/systemd/system/"
     
   - name: Start tomcat service
@@ -379,7 +379,7 @@
 
   - name: Download ROOT.war
     get_url:
-      url: "https://images.ablecloud.io/genie/eGovFrame/ROOT.war"
+      url: "http://images.ablecloud.io/Genie/eGovFrame/ROOT.war"
       dest: "/usr/local/apache-tomcat-9.0.65/webapps/"
 
   # - name: 배포한 DB 가상머신 정보 수집 ({{ db_instance_nm }})
@@ -447,7 +447,7 @@
 
   - name: Download nginx-was conf file
     get_url:
-      url: "https://images.ablecloud.io/genie/eGovFrame/nginx-was.conf"
+      url: "http://images.ablecloud.io/Genie/eGovFrame/nginx-was.conf"
       dest: "/etc/nginx/conf.d/"
   
   # - name: 배포한 가상머신 정보 수집("{{ was_instance_nm }}")
@@ -486,7 +486,7 @@
   # css, images file download
   - name: Download css file
     get_url:
-      url: "https://images.ablecloud.io/genie/eGovFrame/css.zip"
+      url: "http://images.ablecloud.io/Genie/eGovFrame/css.zip"
       dest: "/tmp/css.zip"
   - name: Extract css archive
     ansible.builtin.unarchive:
@@ -496,7 +496,7 @@
 
   - name: Download images file
     get_url:
-      url: "https://images.ablecloud.io/genie/eGovFrame/images.zip"
+      url: "http://images.ablecloud.io/Genie/eGovFrame/images.zip"
       dest: "/tmp/images.zip"
   - name: Extract images archive
     ansible.builtin.unarchive:
