@@ -1,0 +1,85 @@
+---
+### Deploy VirtualMachine ###
+- name: VM 생성 후 지정한 부팅 순서대로 기동
+  hosts: localhost
+  gather_facts: no
+  vars:
+    base_path: "genie"
+    genie_ip: "localhost"
+    default_timeout: 180
+    # vm_count, boot_order는 AWX에서 주입합니다.
+
+  tasks:
+    - name: uuid 생성
+      set_fact:
+        uuid: "{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=5') }}"
+
+    - name: instance명에 uuid 추가 (베이스명)
+      set_fact:
+        instance_nm: "{{ instance_name }}-{{ uuid }}"
+
+    - name: 생성 대상 시퀀스(1..vm_count) 생성
+      set_fact:
+        vm_seq: "{{ query('sequence', 'start=1 end=' + (vm_count | string)) | map('int') | list }}"
+
+    # ------------------------------------------------------------------
+    # 1) 가상머신들 먼저 '중지 상태'로 생성
+    # ------------------------------------------------------------------
+    - name: 가상머신 생성 (stopped) - {{ instance_nm }}-N
+      cs_instance:
+        api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+        api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+        api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+        zone: "{{ lookup('env', 'MOLD_ZONE_NAME') }}"
+        name: "{{ instance_nm }}-{{ item }}"
+        template: "{{ instance_temp }}"
+        service_offering: "{{ instance_computeoffer }}"
+        ssh_key: "{{ lookup('env', 'MOLD_SSH_KEYPAIR') }}"
+        user_data: |
+          #cloud-config
+          disable_root: false
+          ssh_pwauth: true
+        networks: "{{ lookup('env', 'AC_NETWORK_NAME') }}"
+        api_timeout: "{{ default_timeout }}"
+        state: stopped
+      loop: "{{ vm_seq }}"
+      register: vm_created
+
+    - name: 생성 결과 요약
+      debug:
+        msg: "created={{ instance_nm }}-{{ item }}"
+      loop: "{{ vm_seq }}"
+
+    # ------------------------------------------------------------------
+    # 부팅 순서 검증 (개수/중복/범위)
+    # ------------------------------------------------------------------
+    - name: 부팅 순서 정수 리스트로 변환
+      set_fact:
+        boot_order_int: "{{ boot_order | map('int') | list }}"
+
+    - name: 부팅 순서 검증
+      assert:
+        that:
+          - boot_order_int | length == vm_count | int
+          - (boot_order_int | unique | length) == vm_count | int
+          - (boot_order_int | min) >= 1
+          - (boot_order_int | max) <= (vm_count | int)
+        fail_msg: >-
+          부팅 순서가 유효하지 않습니다. vm_count={{ vm_count }}인 경우
+          boot_order는 1..{{ vm_count }}를 중복 없이 모두 포함해야 합니다(예: [1,2,3])입니다.
+        success_msg: "부팅 순서 검증 완료입니다."
+
+    # ------------------------------------------------------------------
+    # 2) 지정한 부팅 순서대로 시작 (예: 3 → 1 → 2)
+    # ------------------------------------------------------------------
+    - name: 부팅 순서대로 가상머신 시작
+      cs_instance:
+        api_url: "{{ lookup('env', 'MOLD_API_URL') }}"
+        api_key: "{{ lookup('env', 'MOLD_API_KEY') }}"
+        api_secret: "{{ lookup('env', 'MOLD_SECRET_KEY') }}"
+        zone: "{{ lookup('env', 'MOLD_ZONE_NAME') }}"
+        name: "{{ instance_nm }}-{{ item }}"
+        api_timeout: "{{ default_timeout }}"
+        state: started
+      loop: "{{ boot_order_int }}"
+      register: vm_started
