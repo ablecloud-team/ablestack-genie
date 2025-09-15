@@ -209,3 +209,24 @@
 #      controller_password: "{{ admin_password.stdout }}"
 #      survey_enabled: yes
 #      survey_spec: "{{ lookup('url', 'https://raw.githubusercontent.com/ablecloud-team/ablestack-genie/master/playbook/nfs_pv/nfs_pv_deploy_survey.json', split_lines=False) }}"
+
+  # deployVmAndBoot.yml
+  - name: VM Creation and Boot Order Control deploy playbook
+    awx.awx.job_template:
+      name: 가상머신생성 및 부팅 순서 제어
+      description: 생성할 가상머신의 개수(vm_count),  부팅순서(boot_order), 이름(instance_name), 템플릿(instance_temp), 오퍼링(instance_computeoffer)과 같은 필수 정보를 입력합니다.
+      job_type: "run"
+      inventory: Genie Inventory
+      project: Genie Git Project
+      playbook: playbook/vm/deployVmAndBoot.yml
+      credentials:
+        - "Automation Controller Credential"
+      state: "present"
+      controller_host: "http://{{ genie_ip }}:80"
+      controller_username: admin
+      controller_password: "{{ admin_password.stdout }}"
+      extra_vars:
+        # uuid: "{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=5') }}"
+        instance_name: "deploy-vm"
+        instance_temp: "Rocky-9-cloudinit"
+        instance_computeoffer: "2C-4GB-RBD-HA"

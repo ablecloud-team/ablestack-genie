@@ -269,7 +269,7 @@
   - name: Download and unpack latest WordPress
     unarchive:
       # src: https://wordpress.org/latest.tar.gz
-      src: https://images.ablecloud.io/genie/wordpress/wordpress-6.0.1.tar.gz
+      src: http://images.ablecloud.io/Genie/wordpress/wordpress-6.0.1.tar.gz
       dest: "/var/www/{{ http_host }}"
       remote_src: yes
       creates: "/var/www/{{ http_host }}/wordpress"
