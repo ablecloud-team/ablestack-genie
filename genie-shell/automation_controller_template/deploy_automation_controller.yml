@@ -5,6 +5,7 @@
     base_path: 'genie'
     minikube_cpu: '2'
     minikube_ram: '3g'
+    minikube_cert_expiration: '131400h'  # 15 years
     genie_ip: 'localhost'
     default_credential_id: '1'
     default_project_id: '6'
@@ -20,7 +21,7 @@
       shell: ln -s -f /root/.minikube /root/.kube/.minikube
 
     - name: Start Minikube cluster
-      shell: minikube start --cpus={{ minikube_cpu }} --memory={{ minikube_ram }} --addons=ingress --install-addons=true --driver=docker --force
+      shell: minikube start --cpus={{ minikube_cpu }} --memory={{ minikube_ram }} --cert-expiration={{ minikube_cert_expiration }} --addons=ingress --install-addons=true --driver=docker --force
       tags:
         - start minikube
 
@@ -101,6 +102,7 @@
         cidrs: 0.0.0.0/0
         start_port: 1
         end_port: 65535
+      ignore_errors: yes
 
     - name: Automation Controller Port forward Rule Settings
       cs_portforward:
@@ -165,6 +167,7 @@
           {
           }
         status_code: 204
+      ignore_errors: yes
 
     - name: Change default credential name
       uri:
@@ -180,6 +183,7 @@
             "description": "Genie EE에 SSH 접근을 위한 인증 정보입니다."
           }
         status_code: 200
+      ignore_errors: yes
 
     - name: Delete default project
       uri:
@@ -207,6 +211,7 @@
             "description": "Genie 자동화 서비스에서 사용하는 인벤토리 정보입니다."
           }
         status_code: 200
+      ignore_errors: yes
 
     - name: Change Cleanup Job Schedule settings
       awx.awx.schedule:
@@ -221,6 +226,7 @@
         controller_host: "http://{{ genie_ip }}:80"
         controller_username: admin
         controller_password: "{{ admin_password.stdout }}"
+      ignore_errors: yes
 
     - name: Create Automation Controller Credentials
       awx.awx.credential:
@@ -250,6 +256,7 @@
             "description": "오토메이션 컨트롤러의 IP입니다."
           }
         status_code: 201
+      ignore_errors: yes
 
     - name: Add group (genie_vm) to genie_inventory (default inventory)
       uri:
@@ -265,6 +272,7 @@
           }
         status_code: 201
       register: group
+      ignore_errors: yes
 
     - name: Add automation controller host to genie_vm group in genie_inventory (default inventory)
       uri:
@@ -280,6 +288,7 @@
             "inventory": "{{ default_inventory_id }}"
           }
         status_code: 204
+      ignore_errors: yes
 
     # - name: Create a Genie remote repository project
     #   uri:
